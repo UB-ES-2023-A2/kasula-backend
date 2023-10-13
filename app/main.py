@@ -8,7 +8,7 @@ import uvicorn
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
 
-from routers import task_router
+from routers import recipe_router
 
 app = FastAPI()
 
@@ -28,7 +28,7 @@ async def shutdown_db_client():
     app.mongodb_client.close()
 
 
-app.include_router(task_router.router, tags=["tasks"], prefix="/task")
+app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
 
 
 if __name__ == "__main__":
