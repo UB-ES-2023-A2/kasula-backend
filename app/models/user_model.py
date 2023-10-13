@@ -24,11 +24,11 @@ class UserModel(BaseModel):
         }
 
 class UpdateUserModel(BaseModel):
-    username: Optional[str] = None
-    email: Optional[str] = None
+    username: Optional[str] = Field(None)
+    email: Optional[str] = Field(None)
     #hashed_password: Optional[str]
-    profile_picture: Optional[str] = None
-    bio: Optional[str] = None
+    profile_picture: Optional[str] = Field(None)
+    bio: Optional[str] = Field(None)
 
     class Config:
         schema_extra = {

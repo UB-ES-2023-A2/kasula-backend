@@ -54,6 +54,6 @@ async def delete_user(id: str, request: Request):
     delete_result = await request.app.mongodb["users"].delete_one({"_id": id})
 
     if delete_result.deleted_count == 1:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=delete_result.raw_result)
     
     raise HTTPException(status_code=404, detail=f"User {id} not found")
