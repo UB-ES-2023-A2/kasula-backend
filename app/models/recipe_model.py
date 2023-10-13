@@ -9,8 +9,8 @@ class RecipeModel(BaseModel):
     name: str = Field("Recipe Name", max_length=50)
     ingredients: List[RecipeIngredient] = Field(...)
     instructions: List[InstructionModel] = Field(...)
-    cooking_time: int = Field(0)
-    difficulty: int = Field(0)
+    cooking_time: int = Field(default=0)
+    difficulty: int = Field(default=0)
     image: Optional[str] = Field(None)
 
     class Config:
@@ -43,12 +43,12 @@ class RecipeModel(BaseModel):
 
 
 class UpdateRecipeModel(BaseModel):
-    name: Optional[str]
-    ingredients: Optional[List[RecipeIngredient]]
-    instructions: Optional[List[InstructionModel]]
-    cooking_time: Optional[int]
-    difficulty: Optional[int]
-    image: Optional[str]
+    name: Optional[str] = Field(None, max_length=50)
+    ingredients: Optional[List[RecipeIngredient]] = Field(None)
+    instructions: Optional[List[InstructionModel]] = Field(None)
+    cooking_time: Optional[int] = Field(None)
+    difficulty: Optional[int] = Field(None)
+    image: Optional[str] = Field(None)
 
     class Config:
         schema_extra = {
