@@ -9,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
 
 from routers import user_router
+from routers import recipe_router
 
 app = FastAPI()
 
@@ -29,6 +30,7 @@ async def shutdown_db_client():
 
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")
+app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
 
 
 if __name__ == "__main__":
