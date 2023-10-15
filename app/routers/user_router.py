@@ -37,7 +37,7 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
 
 @router.get("/me", response_description="Get current user")
 async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
-    user = await db["users"].find_one({"username": current_user})
+    user = await db["users"].find_one({"username": current_user["username"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string
         return user
@@ -63,7 +63,7 @@ async def update_user(id: str, db: AsyncIOMotorClient = Depends(get_database), u
     user = {k: v for k, v in user.dict().items() if v is not None}
 
     # Compare the current_user with the value of user["username"]
-    if current_user != user["username"]:
+    if current_user["username"] != user["username"]:
         raise HTTPException(status_code=403, detail="Forbidden. You don't have permission to delete this user.")
 
     # Convert the string id to ObjectId type
@@ -111,7 +111,7 @@ async def delete_user(id: str, db: AsyncIOMotorClient = Depends(get_database), c
         raise HTTPException(status_code=404, detail=f"User {id} not found")
 
     # Compare the current_user with the username of the fetched user
-    if current_user != user_to_delete["username"]:
+    if current_user["username"] != user_to_delete["username"]:
         raise HTTPException(status_code=403, detail="Forbidden: You don't have permission to delete this user.")
     
     delete_result = await db["users"].delete_one({"_id": oid})
@@ -130,5 +130,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user["username"]})
+    user_id = str(user["_id"])  # Convert the user ID (if it's an ObjectId from MongoDB) to string
+    username = user["username"]
+    access_token = create_access_token(data={"sub": username}, user_id=user_id, username=username)
     return {"access_token": access_token, "token_type": "bearer"}
