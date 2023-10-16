@@ -9,6 +9,7 @@ motor
 dnspython
 
 # Development
+python-multipart
 pip-tools
 black
 flake8

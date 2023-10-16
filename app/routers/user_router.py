@@ -1,5 +1,8 @@
 from .common import *
 from app.models.user_model import UserModel, UpdateUserModel
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from app.utils.token import create_access_token
+from bson import ObjectId
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -12,7 +15,7 @@ def get_database(request: Request):
 async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIOMotorClient = Depends(get_database)):
     # Hash the password before storing
     hashed_password = hash_password(user.password)
-    user_dict = user.dict()
+    user_dict = user.model_dump()
     user_dict["hashed_password"] = hashed_password
     del user_dict["password"]  # Remove plain password from the dict
 
