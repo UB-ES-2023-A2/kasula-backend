@@ -83,6 +83,6 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     delete_result = await db["recipes"].delete_one({"_id": id})
 
     if delete_result.deleted_count == 1:
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=delete_result.raw_result)
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Recipe successfully deleted"})
     
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
