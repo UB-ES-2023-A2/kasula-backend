@@ -65,8 +65,8 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
 async def update_user(id: str, db: AsyncIOMotorClient = Depends(get_database), user: UpdateUserModel = Body(...), current_user: str = Depends(get_current_user)):
     user = {k: v for k, v in user.model_dump().items() if v is not None}
 
-    # Compare the current_user with the value of user["username"]
-    if current_user["username"] != user["username"]:
+    # Compare the current_user id with the value of the id we want to update
+    if current_user["user_id"] != id:
         raise HTTPException(status_code=403, detail="Forbidden. You don't have permission to update this user.")
 
     # Convert the string id to ObjectId type
