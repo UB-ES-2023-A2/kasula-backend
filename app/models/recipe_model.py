@@ -12,6 +12,7 @@ class RecipeModel(BaseModel):
     cooking_time: int = Field(default=0)
     difficulty: int = Field(default=0)
     image: Optional[str] = Field(None)
+    energy: Optional[int] = Field(None)
     user_id: Optional[str] = Field(None)
 
     class Config:
@@ -39,6 +40,7 @@ class RecipeModel(BaseModel):
                 "cooking_time": 1,
                 "difficulty": 1,
                 "image": "imgurl",
+                "energy": 400,
                 "user_id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
             }
         }
@@ -51,6 +53,7 @@ class UpdateRecipeModel(BaseModel):
     cooking_time: Optional[int] = Field(None)
     difficulty: Optional[int] = Field(None)
     image: Optional[str] = Field(None)
+    energy: Optional[int] = Field(None)
 
     class Config:
         schema_extra = {
@@ -75,6 +78,6 @@ class UpdateRecipeModel(BaseModel):
                 "cooking_time": 1,
                 "difficulty": 1,
                 "image": "imgurl",
-                "user_id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
+                "energy": 400,
             }
         }
