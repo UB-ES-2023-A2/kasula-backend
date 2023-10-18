@@ -22,8 +22,8 @@ class IngredientModel(BaseModel):
     name: str = Field(...)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
                 "name": "Ingredient Name"
@@ -36,8 +36,8 @@ class RecipeIngredient(IngredientModel):
     unit: Unit = Field(...)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
                 "name": "Ingredient Name",
@@ -51,7 +51,7 @@ class UpdateIngredientModel(BaseModel):
     quantity: Optional[int]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Ingredient Name"
             }
@@ -62,7 +62,7 @@ class UpdateRecipeIngredientModel(UpdateIngredientModel):
     unit: Optional[Unit]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Ingredient Name",
                 "quantity": 1,
