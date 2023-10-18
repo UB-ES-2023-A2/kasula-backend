@@ -7,8 +7,8 @@ class InstructionModel(BaseModel):
     #image: Optional[str] = Field(None)
 
     class Config:
-        allow_population_by_field_name = True
-        schema_extra = {
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
                 "body": "Recipe Name",
@@ -23,7 +23,7 @@ class UpdateInstructionModel(BaseModel):
     #image: Optional[str]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "body": "Recipe Name",
                 "step_number": 1,

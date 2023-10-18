@@ -13,10 +13,10 @@ from routers import recipe_router
 
 app = FastAPI()
 
-print("ENVIRONMENT VARIABLES")
+print("\nENVIRONMENT VARIABLES")
 print("DEBUG_MODE: " + str(settings.DEBUG_MODE))
 print("DB_URL: " + settings.DB_URL)
-print("DB_NAME: " + settings.DB_NAME)
+print("DB_NAME: " + settings.DB_NAME + "\n")
 
 @app.on_event("startup")
 async def startup_db_client():
