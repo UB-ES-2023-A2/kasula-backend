@@ -13,16 +13,20 @@ def get_database(request: Request):
 
 @router.post("/", response_description="Add new user")
 async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIOMotorClient = Depends(get_database)):
+    
+    # Check if username or email already exists in the database
+    existing_user = await db["users"].find_one({"$or": [{"username": user.username}, {"email": user.email}]})
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or email already registered")
+
     # Hash the password before storing
     hashed_password = hash_password(user.password)
     user = jsonable_encoder(user)
     user["hashed_password"] = hashed_password
     del user["password"]  # Remove plain password from the dict
-    db = get_database(request)
+    
     new_user = await db["users"].insert_one(user)
-    created_user = await db["users"].find_one(
-        {"_id": new_user.inserted_id}
-    )
+    created_user = await db["users"].find_one({"_id": new_user.inserted_id})
 
     if isinstance(created_user["_id"], ObjectId):
         created_user["_id"] = str(created_user["_id"])
