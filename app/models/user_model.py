@@ -3,6 +3,7 @@ from typing import Optional
 import uuid
 
 class UserModel(BaseModel):
+    id: str = Field(default_factory=uuid.uuid4, alias="_id")
     username: str = Field(...)
     email: str = Field(...)
     password: str = Field(...)
