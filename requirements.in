@@ -12,3 +12,6 @@ dnspython
 pip-tools
 black
 flake8
+
+bcrypt
+pyjwt
