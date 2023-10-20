@@ -31,8 +31,6 @@ app.add_middleware(
 )
 
 print("\nENVIRONMENT VARIABLES")
-
-print("\nENVIRONMENT VARIABLES")
 print("DEBUG_MODE: " + str(settings.DEBUG_MODE))
 print("DB_URL: " + settings.DB_URL)
 print("DB_NAME: " + settings.DB_NAME + "\n")
