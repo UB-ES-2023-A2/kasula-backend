@@ -1,6 +1,8 @@
 import sys
 import os
 
+from fastapi.middleware.cors import CORSMiddleware
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from fastapi import FastAPI
@@ -12,6 +14,21 @@ from routers import user_router
 from routers import recipe_router
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://0.0.0.0:8000",
+    "http://127.0.0.1:8000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 print("\nENVIRONMENT VARIABLES")
 print("DEBUG_MODE: " + str(settings.DEBUG_MODE))
