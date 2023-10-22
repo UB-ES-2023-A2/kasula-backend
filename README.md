@@ -3,28 +3,29 @@
 KASULÀ is a webpage where you can view and share recipes that mean the world to you.
   
 ## Installation
-  
 ```powershell
 pip-compile requirements.in
   
 python -m venv env
 ./env/Scripts/activate
-pip install -r .\requirements.txt
+pip install -r ./requirements.txt
 ```
-  
-Create a .env file in config with the following content:
+
+## Configuration
+Create a .env file in the config folder following the .env.example file. You will need to ask a developer the secret variables.
 ```
-DEBUG_MODE=True
+DEBUG_MODE=
 DB_URL=""
-DB_NAME="kasuladb"
-  
+DB_NAME=""
+
 SECRET_KEY=""
+
+GOOGLE_CLOUD_TOKEN=""
 ```
-Ask for the DB_URL and the SECRET_KEY
   
-  
-# Run
+## Run
   
 ```powershell
+./env/Scripts/activate
 python app/main.py
 ```
