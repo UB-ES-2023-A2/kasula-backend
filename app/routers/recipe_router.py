@@ -86,3 +86,21 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Recipe successfully deleted"})
     
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
+
+# Upload recipe image (locally for now)
+from fastapi import UploadFile
+from pathlib import Path
+
+UPLOAD_DIR = Path('uploads')
+
+@router.post("/uploadfile")
+async def create_upload_file(file: UploadFile | None = None):
+    if not file:
+        return {"message": "No upload file sent"}
+    else:
+        data = await file.read()
+        save_to = UPLOAD_DIR / file.filename
+        with open(save_to, "wb") as f:
+            f.write(data)
+        return {"filename": file.filename}
