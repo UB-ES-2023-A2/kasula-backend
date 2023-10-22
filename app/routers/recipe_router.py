@@ -5,6 +5,10 @@ from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 
+import requests
+import os
+
+
 router = APIRouter()
 
 def get_database(request: Request):
@@ -100,7 +104,32 @@ async def create_upload_file(file: UploadFile | None = None):
         return {"message": "No upload file sent"}
     else:
         data = await file.read()
-        save_to = UPLOAD_DIR / file.filename
-        with open(save_to, "wb") as f:
-            f.write(data)
-        return {"filename": file.filename}
+        # Save locally
+        #save_to = UPLOAD_DIR / file.filename
+        #with open(save_to, "wb") as f:
+        #    f.write(data)
+        response_json = upload_image(data, file.filename)
+        print(response_json)
+        file_url = f"https://storage.googleapis.com/{response_json['bucket']}/{response_json['name']}"
+        return {"file_url": file_url}
+
+
+GOOGLE_CLOUD_TOKEN = os.getenv("GOOGLE_CLOUD_TOKEN")
+def upload_image(data, name):
+    headers = {
+        'Authorization': GOOGLE_CLOUD_TOKEN, # Needs to be refreshed every hour.......
+        'Content-Type': 'image/jpeg',
+    }
+    params = {
+        'uploadType': 'media',
+        'name': f'recipes/{name}'
+    }
+    print(headers)
+    print(params)
+    response = requests.post(
+        'https://storage.googleapis.com/upload/storage/v1/b/bucket-kasula_images/o',
+        headers=headers,
+        params=params,
+        data=data)
+
+    return response.json()
