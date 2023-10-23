@@ -96,26 +96,46 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
 from fastapi import UploadFile
 from pathlib import Path
 
-UPLOAD_DIR = Path('uploads')
-
 @router.post("/uploadfile")
 async def create_upload_file(file: UploadFile | None = None):
     if not file:
         return {"message": "No upload file sent"}
     else:
-        data = await file.read()
-        # Save locally
-        #save_to = UPLOAD_DIR / file.filename
-        #with open(save_to, "wb") as f:
-        #    f.write(data)
-        response_json = upload_image(data, file.filename)
-        print(response_json)
-        file_url = f"https://storage.googleapis.com/{response_json['bucket']}/{response_json['name']}"
-        return {"file_url": file_url}
+        fullname = await upload_image(file, file.filename)
+        print("Finished execution")
+        print(fullname)
+        return {"file_url": f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'}
 
 
+from google.cloud import storage
+import time
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
+
+async def upload_image(file : UploadFile, name):
+    storage_client = storage.Client(project=project_name)
+    bucket = storage_client.get_bucket(bucket_name)
+    point = name.rindex('.')
+    fullname = 'recipes/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    blob = bucket.blob(fullname)
+    
+    data = await file.read()
+    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
+    UPLOAD_DIR = Path('')
+    save_to = UPLOAD_DIR / file.filename
+    with open(save_to, "wb") as f:
+        f.write(data)
+    blob.upload_from_filename(save_to)
+    os.remove(save_to)
+    
+    return fullname
+
+
+'''
+# OLD, Using Token that expires every hour
 GOOGLE_CLOUD_TOKEN = os.getenv("GOOGLE_CLOUD_TOKEN")
-def upload_image(data, name):
+def upload_image_old(data, name):
     headers = {
         'Authorization': GOOGLE_CLOUD_TOKEN, # Needs to be refreshed every hour.......
         'Content-Type': 'image/jpeg',
@@ -133,3 +153,4 @@ def upload_image(data, name):
         data=data)
 
     return response.json()
+'''

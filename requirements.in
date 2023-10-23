@@ -14,3 +14,4 @@ pip-tools
 black
 flake8
 requests
+google-cloud-storage
