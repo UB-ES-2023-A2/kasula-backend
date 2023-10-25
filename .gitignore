@@ -134,3 +134,4 @@ dmypy.json
 
 # Compiled platform dependent python packages and libs
 requirements.txt
+config/secret

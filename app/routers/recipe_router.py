@@ -5,6 +5,10 @@ from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 
+import requests
+import os
+
+
 router = APIRouter()
 
 def get_database(request: Request):
@@ -86,3 +90,67 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Recipe successfully deleted"})
     
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
+
+# Upload recipe image (locally for now)
+from fastapi import UploadFile
+from pathlib import Path
+
+@router.post("/uploadfile")
+async def create_upload_file(file: UploadFile | None = None):
+    if not file:
+        return {"message": "No upload file sent"}
+    else:
+        fullname = await upload_image(file, file.filename)
+        print("Finished execution")
+        print(fullname)
+        return {"file_url": f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'}
+
+
+from google.cloud import storage
+import time
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
+
+async def upload_image(file : UploadFile, name):
+    storage_client = storage.Client(project=project_name)
+    bucket = storage_client.get_bucket(bucket_name)
+    point = name.rindex('.')
+    fullname = 'recipes/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    blob = bucket.blob(fullname)
+    
+    data = await file.read()
+    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
+    UPLOAD_DIR = Path('')
+    save_to = UPLOAD_DIR / file.filename
+    with open(save_to, "wb") as f:
+        f.write(data)
+    blob.upload_from_filename(save_to)
+    os.remove(save_to)
+    
+    return fullname
+
+
+'''
+# OLD, Using Token that expires every hour
+GOOGLE_CLOUD_TOKEN = os.getenv("GOOGLE_CLOUD_TOKEN")
+def upload_image_old(data, name):
+    headers = {
+        'Authorization': GOOGLE_CLOUD_TOKEN, # Needs to be refreshed every hour.......
+        'Content-Type': 'image/jpeg',
+    }
+    params = {
+        'uploadType': 'media',
+        'name': f'recipes/{name}'
+    }
+    print(headers)
+    print(params)
+    response = requests.post(
+        'https://storage.googleapis.com/upload/storage/v1/b/bucket-kasula_images/o',
+        headers=headers,
+        params=params,
+        data=data)
+
+    return response.json()
+'''

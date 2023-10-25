@@ -16,3 +16,5 @@ flake8
 
 bcrypt
 pyjwt
+requests
+google-cloud-storage
