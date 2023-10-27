@@ -10,8 +10,8 @@ import uvicorn
 from motor.motor_asyncio import AsyncIOMotorClient
 from config import settings
 
-from routers import user_router
-from routers import recipe_router
+from app.routers import user_router
+from app.routers import recipe_router
 
 app = FastAPI()
 
@@ -57,3 +57,7 @@ if __name__ == "__main__":
         reload=settings.DEBUG_MODE,
         port=settings.PORT,
     )
+
+@app.get("/")
+async def read_main():
+    return {"msg": "Hello World"}

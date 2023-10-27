@@ -14,6 +14,12 @@ from app.main import app
 
 client = TestClient(app)
 
+def test_hello_world():
+    # Test the root path
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"Hello": "World"}
+
 def test_create_user():
     # Test creating a new user
     user = {
