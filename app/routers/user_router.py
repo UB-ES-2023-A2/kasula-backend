@@ -118,7 +118,6 @@ async def delete_user(id: str, db: AsyncIOMotorClient = Depends(get_database), c
 @router.get("/check_username/{username}", response_description="Check if username is already taken")
 async def check_username(username: str, db: AsyncIOMotorClient = Depends(get_database)):
     user = await db["users"].find_one({"username": username})
-    print(user)
     if user:
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Username already taken", "status": False})
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Username available", "status": True})
