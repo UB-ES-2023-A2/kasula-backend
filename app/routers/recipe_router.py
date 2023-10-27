@@ -14,6 +14,7 @@ def get_database(request: Request):
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: RecipeModel = Body(...), current_user: UserModel = Depends(get_current_user)):
     recipe.user_id = current_user["user_id"]
     recipe = jsonable_encoder(recipe)
+    
     new_recipe = await db["recipes"].insert_one(recipe)
     created_recipe = await db["recipes"].find_one({"_id": new_recipe.inserted_id})
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_recipe)
