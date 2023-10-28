@@ -28,4 +28,4 @@ jobs:
         
         - name: Run tests
           run: |
-            pytest app/fake_test.py
+            pytest
