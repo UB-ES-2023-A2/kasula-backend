@@ -4,6 +4,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
 
+# Suppress UserWarning from pydantic
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
@@ -11,8 +14,17 @@ router = APIRouter()
 def get_database(request: Request):
     return request.app.mongodb
 
+def is_valid_email(email: str) -> bool:
+    """Check if provided email has a valid format."""
+    regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    return re.match(regex, email) is not None
+
 @router.post("/", response_description="Add new user")
 async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIOMotorClient = Depends(get_database)):
+    
+    # Check if email has a valid format
+    if not is_valid_email(user.email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email format")
     
     # Check if username or email already exists in the database
     existing_user = await db["users"].find_one({"$or": [{"username": user.username}, {"email": user.email}]})
@@ -51,13 +63,7 @@ async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotor
 
 @router.get("/{id}", response_description="Get a single user given its id")
 async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
-    try:
-        # Convert the string id to ObjectId type
-        oid = ObjectId(id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid ObjectId format")
-    
-    if (user := await db["users"].find_one({"_id": oid})) is not None:
+    if (user := await db["users"].find_one({"_id": id})) is not None:
         # Convert ObjectId back to string for the response
         user["_id"] = str(user["_id"])
         return user

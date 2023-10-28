@@ -14,7 +14,14 @@ pip-tools
 black
 flake8
 
+# Encryption
 bcrypt
 pyjwt
+
+# Tests
+httpx
 requests
+pytest
+
+# Google Cloud Storage
 google-cloud-storage
