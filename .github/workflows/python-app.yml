@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-        - name: "Say Hello Mona it's Monday"
-          run: echo "Very secrete text $VARIABLE_TEST dreta" # changed the variable
+        - name: "Test of the variables in GitHub Actions"
+          run: echo "Very secrete text $YOUR_SECRET_NAME dreta"
 
         # - uses: actions/checkout@v4
         # - name: Set up Python
