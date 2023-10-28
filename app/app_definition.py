@@ -32,7 +32,3 @@ async def shutdown_db_client():
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")
 app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
-
-@app.get("/")
-async def read_main():
-    return {"msg": "Hello World"}
