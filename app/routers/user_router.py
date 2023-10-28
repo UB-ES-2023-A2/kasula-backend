@@ -119,14 +119,14 @@ async def delete_user(id: str, db: AsyncIOMotorClient = Depends(get_database), c
 async def check_username(username: str, db: AsyncIOMotorClient = Depends(get_database)):
     user = await db["users"].find_one({"username": username})
     if user:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Username already taken", "status": False})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Username already taken", "status": False})
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Username available", "status": True})
 
 @router.get("/check_email/{email}", response_description="Check if email exists in the database")
 async def check_email(email: str, db: AsyncIOMotorClient = Depends(get_database)):
     user = await db["users"].find_one({"email": email})
     if user:
-        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"message": "Email already registered", "status": False})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Email already registered", "status": False})
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Email available", "status": True})
 
 @router.post("/token", response_description="Token")
