@@ -1,6 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
-from pydantic import root_validator
+from pydantic import validator
 from dotenv import load_dotenv
 
 
@@ -19,14 +19,14 @@ class ServerSettings(BaseSettings):
 
 class DatabaseSettings(BaseSettings):
     DB_URL: str = os.getenv("DB_URL")
-    TEST_MODE: bool = bool(os.getenv("TEST_MODE", False))
-    DB_NAME: str = None
+    TEST_MODE: bool = os.getenv("TEST_MODE", "False").lower() == "true"
+    DB_NAME: str = os.getenv("DB_NAME")
 
-    @root_validator(pre=True)
-    def set_db_name(cls, values):
+    @validator("DB_NAME", pre=True, always=True)
+    def set_db_name(cls, db_name, values):
         if values.get("TEST_MODE"):
-            return {"DB_NAME": os.getenv("DB_TEST")}
-        return {"DB_NAME": os.getenv("DB_NAME")}
+            return os.getenv("DB_TEST")
+        return db_name
 
 
 class Settings(CommonSettings, ServerSettings, DatabaseSettings):
