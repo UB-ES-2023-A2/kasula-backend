@@ -21,6 +21,7 @@ pyjwt
 # Tests
 httpx
 requests
+pytest
 
 # Google Cloud Storage
 google-cloud-storage
