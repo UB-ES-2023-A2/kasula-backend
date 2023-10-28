@@ -3,6 +3,7 @@ name: Python package
 env:
   DB_URL: ${{secrets.API_KEY}}
   DB_NAME: ${{secrets.DB_NAME}}
+  TEST_MODE: ${{secrets.TEST_MODE}}
 
 on: [push]
 
@@ -26,4 +27,4 @@ jobs:
         
         - name: Run tests
           run: |
-            pytest
+            pytest app/fake_test.py
