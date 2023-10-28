@@ -25,3 +25,7 @@ python app/main.py
 ```
 pytest
 ```
+Alternative
+```
+python app/run_tests.py
+``` 
