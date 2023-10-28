@@ -12,12 +12,20 @@ from app_definition import app
 from tests import test_user_endpoints, test_recipe_endpoints
 from tests.test_user_endpoints import TestAssertionError
 
+async def clear_collections():
+    await app.mongodb["user"].drop()
+    await app.mongodb["recipe"].drop()
+
 def initialize():
     # Connect to the MongoDB database
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
 
-    print("\nConnected to the test database.\n")
+    # Clear collections
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(clear_collections())
+
+    print("\nConnected to the test database and cleared collections.\n")
 
 def run_single_test(test_func):
     try:
