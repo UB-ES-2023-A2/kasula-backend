@@ -131,3 +131,7 @@ dmypy.json
 
 # Editor stuff
 .vscode
+
+# Compiled platform dependent python packages and libs
+requirements.txt
+config/secret
