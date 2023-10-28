@@ -9,7 +9,7 @@ jobs:
 
     steps:
         - name: "Say Hello Mona it's Monday"
-          run: echo "Very secrete text $VARIABLE_TEST!"
+          run: echo "Very secrete text $VARIABLE_TEST dreta"
 
         # - uses: actions/checkout@v4
         # - name: Set up Python
