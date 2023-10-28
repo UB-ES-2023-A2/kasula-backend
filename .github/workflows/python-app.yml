@@ -1,5 +1,9 @@
 name: Python package
 
+env:
+  DB_URL: ${{secrets.API_KEY}}
+  DB_NAME: ${{secrets.DB_NAME}}
+
 on: [push]
 
 jobs:
@@ -8,12 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-        # - name: "Test of the variables in GitHub Actions"
-        #   run: echo "Very secret text $VARIABLE_TEST dreta"
-        # - name: "Test 2 of the variables in GitHub Actions"
-        #   run: echo "VGithub path $GITHUB_PATH dreta"
-          
-
         - uses: actions/checkout@v4
         - name: Set up Python
           uses: actions/setup-python@v4
