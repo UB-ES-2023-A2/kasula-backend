@@ -19,6 +19,7 @@ class ServerSettings(BaseSettings):
 class DatabaseSettings(BaseSettings):
     DB_URL: str = os.getenv("DB_URL")
     DB_NAME: str = os.getenv("DB_NAME")
+    DB_TEST: str = os.getenv("DB_TEST")
 
 
 class Settings(CommonSettings, ServerSettings, DatabaseSettings):
