@@ -137,10 +137,7 @@ async def check_email(email: str, db: AsyncIOMotorClient = Depends(get_database)
 
 @router.post("/token", response_description="Token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncIOMotorClient = Depends(get_database)):
-    if '@' in form_data.username:
-        user = await db["users"].find_one({"email": form_data.username})
-    else:
-        user = await db["users"].find_one({"username": form_data.username})
+    user = await db["users"].find_one({"username": form_data.username})
     if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
