@@ -9,15 +9,23 @@ from config import settings
 from app_definition import app
 
 # Import the test functions
-import test_user_endpoints as test_user_endpoints
-from test_user_endpoints import TestAssertionError
+from tests import test_user_endpoints, test_recipe_endpoints
+from tests.test_user_endpoints import TestAssertionError
+
+async def clear_collections():
+    await app.mongodb["user"].drop()
+    await app.mongodb["recipe"].drop()
 
 def initialize():
     # Connect to the MongoDB database
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
 
-    print("\nConnected to the test database.\n")
+    # Clear collections
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(clear_collections())
+
+    print("\nConnected to the test database and cleared collections.\n")
 
 def run_single_test(test_func):
     try:
@@ -58,7 +66,29 @@ def run_tests():
         # Add more tests as needed
     ]
 
-    results = [run_single_test(test_func) for test_func in user_test_functions]
+    recipe_test_functions = [
+        test_recipe_endpoints.test_create_recipe,
+        test_recipe_endpoints.test_list_recipes,
+        test_recipe_endpoints.test_show_recipe,
+        test_recipe_endpoints.test_update_recipe,
+        test_recipe_endpoints.test_delete_recipe,
+    ]
+
+    # User tests
+    # Make a print of the test name, around a line of dashes
+    print("\n" + "=" * 40)
+    print(" " * 12 + "USER TESTS" + " " * 12)
+    print("=" * 40 + "\n")
+
+    [run_single_test(test_func) for test_func in user_test_functions]
+
+    print("\n" + "-" * 50 + "\n")
+
+    # Recipe tests
+    print("\n" + "=" * 40)
+    print(" " * 12 + "RECIPE TESTS" + " " * 12)
+    print("=" * 40 + "\n")
+    [run_single_test(test_func) for test_func in recipe_test_functions]
     
     cleanup()
 

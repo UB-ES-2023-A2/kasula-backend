@@ -85,7 +85,7 @@ def test_list_users():
         response = client.get("/user/")
 
         if response.status_code != 200 or not isinstance(response.json(), list):
-            raise TestAssertionError("Failed list users test", response=response)
+            raise TestAssertionError(response=response)
 
 def test_get_me():
     with TestClient(app) as client:
