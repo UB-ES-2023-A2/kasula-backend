@@ -1,6 +1,8 @@
+import random
 from .common import *
 from typing import Optional
 import uuid
+
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=uuid.uuid4, alias="_id")
@@ -9,7 +11,7 @@ class UserModel(BaseModel):
     password: str = Field(...)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
-    
+
     class Config:
         populate_by_name = True
         json_schema_extra = {
@@ -22,6 +24,7 @@ class UserModel(BaseModel):
                 "bio": "This is a short bio"
             }
         }
+
 
 class UpdateUserModel(BaseModel):
     username: Optional[str] = Field(None)
@@ -38,5 +41,19 @@ class UpdateUserModel(BaseModel):
                 "password": "password",
                 "profile_picture": "new_imgurl",
                 "bio": "Updated bio"
+            }
+        }
+
+
+class PasswordRecoveryModel(BaseModel):
+    id: str = Field(default_factory=uuid.uuid4, alias="_id")
+    email: str = Field(...)
+    verification_code: int = Field(
+        default_factory=lambda: random.randint(100000, 999999))
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com"
             }
         }
