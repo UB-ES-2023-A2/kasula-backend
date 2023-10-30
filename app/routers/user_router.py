@@ -7,6 +7,7 @@ from bson import ObjectId
 import random
 import smtplib
 import ssl
+import os
 
 # Suppress UserWarning from pydantic
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
@@ -240,13 +241,15 @@ async def update_password(email: str, verification_code: int, user: UpdateUserMo
 def send_email(email: str, verification_code: int):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
-    sender_email = "sup.kasula@gmail.com"
+    sender_email = os.environ.get('EMAIL_USER')  # Fetching from environment variable
     receiver_email = email
-    password = "ebofjgjtyljxjble"
-    message = """\
-    Subject: Password Recovery
+    password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
+    message = f"""\
+From: Sup Kasula <{sender_email}>
+To: {receiver_email}
+Subject: Password Recovery
 
-    Your verification code is: """ + str(verification_code)
+Your verification code is: {verification_code}"""
 
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
