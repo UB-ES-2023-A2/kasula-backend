@@ -28,4 +28,4 @@ pytest
 Alternative
 ```
 python app/run_tests.py
-```  
+```
