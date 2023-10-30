@@ -161,7 +161,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         user = await db["users"].find_one({"email": form_data.username})
     else:
         user = await db["users"].find_one({"username": form_data.username})
-    if not user or not verify_password(form_data.password, user["password"]):
+
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
