@@ -1,6 +1,6 @@
 import uvicorn
-from config import settings
-from .app_definition import app
+from app.config import settings
+from app.app_definition import app
 
 # print("\nENVIRONMENT VARIABLES")
 # print("DEBUG_MODE: " + str(settings.DEBUG_MODE))

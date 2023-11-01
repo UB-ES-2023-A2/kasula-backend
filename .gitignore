@@ -132,4 +132,4 @@ dmypy.json
 # Editor stuff
 .vscode
 
-config/secret
+app/config/secret
