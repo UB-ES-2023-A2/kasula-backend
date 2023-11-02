@@ -9,7 +9,7 @@ load_dotenv()
 
 class CommonSettings(BaseSettings):
     APP_NAME: str = "KASULA"
-    # DEBUG_MODE: bool = bool(os.getenv("DEBUG_MODE", False))
+    DEBUG_MODE: bool = bool(os.getenv("DEBUG_MODE", False))
 
 
 class ServerSettings(BaseSettings):

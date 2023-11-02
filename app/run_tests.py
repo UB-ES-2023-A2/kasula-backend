@@ -1,6 +1,10 @@
 import asyncio
+from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
+import sys
+import os
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from config import settings
 from app_definition import app
 
