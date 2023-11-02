@@ -18,15 +18,13 @@ Create a .env file in the config folder following the .env.example file. You wil
 ## Usage
 ```
 ./env/Scripts/activate
-python app/main.py
+uvicorn app.app_definition:app # Alternative: python app/main.py
 ```
 
 ## Run tests
+app/config/.env TEST_MODE=True (I need to solve it soon)
 ```
-pytest
+pytest # Alternative: python app/run_tests.py
 ```
-Alternative
-```
-python app/run_tests.py
-```
+
  
