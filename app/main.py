@@ -1,6 +1,9 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import uvicorn
-from app.config import settings
-from app.app_definition import app
+from config import settings
+from app_definition import app
 
 # print("\nENVIRONMENT VARIABLES")
 # print("DEBUG_MODE: " + str(settings.DEBUG_MODE))
