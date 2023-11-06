@@ -22,9 +22,18 @@ uvicorn app.app_definition:app # Alternative: python app/main.py
 ```
 
 ## Run tests
-app/config/.env TEST_MODE=True (I need to solve it soon)
+app/config/.env TEST_MODE=True (I'll delete it later)
 ```
 pytest # Alternative: python app/run_tests.py
 ```
 
+Windows
+```
+cmd /C "set TEST_MODE=True&& pytest"
+```
+
+Bash
+```bash
+TEST_MODE=True; pytest
+```
  

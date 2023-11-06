@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+
 from app.config import settings
 from app.routers import user_router, recipe_router
+
 
 app = FastAPI()
 

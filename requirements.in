@@ -25,3 +25,4 @@ pytest
 
 # Google Cloud Storage
 google-cloud-storage
+google-cloud-secret-manager
