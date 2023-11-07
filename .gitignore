@@ -134,4 +134,6 @@ dmypy.json
 
 # Compiled platform dependent python packages and libs
 requirements.txt
-config/secret
+
+# Secret key to upload to Google Cloud Storage
+app/config/secret
