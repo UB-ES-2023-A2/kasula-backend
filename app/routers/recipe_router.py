@@ -4,7 +4,8 @@ from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
-
+from fastapi import Form, UploadFile
+import json
 import requests
 import os
 
@@ -15,13 +16,23 @@ def get_database(request: Request):
     return request.app.mongodb
 
 @router.post("/", response_description="Add new recipe")
-async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: RecipeModel = Body(...), current_user: UserModel = Depends(get_current_user)):
-    recipe.user_id = current_user["user_id"]
-    recipe = jsonable_encoder(recipe)
-    
-    new_recipe = await db["recipes"].insert_one(recipe)
+async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), file: UploadFile | None = None, current_user: UserModel = Depends(get_current_user)):
+    recipe_dict = json.loads(recipe)  # Deserializar la cadena JSON en un diccionario
+    recipe_model = RecipeModel(**recipe_dict)
+    recipe_model.user_id = current_user["user_id"]
+
+    if not file:
+        recipe_model.image = 'None'
+    else:
+        fullname = await upload_image(file, file.filename)
+        recipe_model.image = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'  # Usar f-string correctamente
+
+    recipe_dict = jsonable_encoder(recipe_model)
+
+    new_recipe = await db["recipes"].insert_one(recipe_dict)
     created_recipe = await db["recipes"].find_one({"_id": new_recipe.inserted_id})
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_recipe)
+
 
 @router.get("/", response_description="List all recipes")
 async def list_recipes(db: AsyncIOMotorClient = Depends(get_database)):
