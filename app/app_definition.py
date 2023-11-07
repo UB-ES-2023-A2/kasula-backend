@@ -9,10 +9,13 @@ from app.routers import user_router, recipe_router
 app = FastAPI()
 
 origins = [
+    "*"
+    """ Permeto tots els orígens perquè funcioni quan està deployat
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://0.0.0.0:8000",
-    "http://127.0.0.1:8000"
+    "http://127.0.0.1:8000",
+    """
 ]
 
 app.add_middleware(
