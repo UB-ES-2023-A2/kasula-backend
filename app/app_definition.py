@@ -9,7 +9,9 @@ from app.routers import user_router, recipe_router
 app = FastAPI()
 
 origins = [
-    "*"
+    "*",
+    "http://localhost:3000/" # WTF l'he hagut de posar, apart del *, perquè si no me'l bloquejava
+
     """ Permeto tots els orígens perquè funcioni quan està deployat
     "http://localhost:3000",
     "http://127.0.0.1:3000",
