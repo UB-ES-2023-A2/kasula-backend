@@ -114,8 +114,6 @@ async def create_upload_file(file: UploadFile | None = None):
         return {"message": "No upload file sent"}
     else:
         fullname = await upload_image(file, file.filename)
-        print("Finished execution")
-        print(fullname)
         return {"file_url": f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'}
 
 

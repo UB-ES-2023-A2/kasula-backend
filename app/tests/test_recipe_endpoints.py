@@ -98,11 +98,6 @@ def test_create_recipe():
         }
         response = client.post("/recipe/", files=data, headers=headers)
 
-        print("'AAAAAA'")
-        print(response.status_code)
-        print(response.json())
-        print("'AAAAAA'")
-
         if response.status_code != 201:
             delete_created_user(user_id, access_token)
             raise TestAssertionError(response=response)
