@@ -69,6 +69,7 @@ def test_create_recipe():
 
         # Test creating a new recipe
         recipe = {
+            'id': 'fuck off',
             "name": "Glass of Water",
             "ingredients": [
                 {
@@ -90,7 +91,12 @@ def test_create_recipe():
             "cooking_time": 1,
             "difficulty": 0
         }
-        response = client.post("/recipe/", json=recipe, headers=headers)
+        # ChatGPT OP
+        data = {
+            "recipe": (None, json.dumps(recipe), "application/json"),
+            #"file": ("filename.txt", open("app/tests/tomate-frito-casero.jpg", "rb"))
+        }
+        response = client.post("/recipe/", files=data, headers=headers)
 
         if response.status_code != 201:
             delete_created_user(user_id, access_token)
@@ -146,9 +152,13 @@ def test_show_recipe():
                 }
             ],
             "cooking_time": 1,
-            "difficulty": 0
+            "difficulty": 0,
+            "image": "None"
         }
-        response_original = client.post("/recipe/", json=recipe, headers=headers)
+        response_original = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
+        print('WWWWWWWW')
+        print(response_original.json())
+        print('WWWWWWWW')
         created_recipe_id = response_original.json()["_id"]
 
         # Test getting a single recipe by ID
@@ -208,9 +218,10 @@ def test_update_recipe():
                 }
             ],
             "cooking_time": 1,
-            "difficulty": 0
+            "difficulty": 0,
+            "image": "None"
         }
-        response = client.post("/recipe/", json=recipe, headers=headers)
+        response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
         created_recipe_id = response.json()["_id"]
 
         # Update the created recipe
@@ -268,9 +279,10 @@ def test_delete_recipe():
                 }
             ],
             "cooking_time": 1,
-            "difficulty": 0
+            "difficulty": 0,
+            "image": "None"
         }
-        response = client.post("/recipe/", json=recipe, headers=headers)
+        response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
         created_recipe_id = response.json()["_id"]
 
         # Delete the created recipe
