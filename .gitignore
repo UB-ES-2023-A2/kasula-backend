@@ -133,7 +133,7 @@ dmypy.json
 .vscode
 
 # Compiled platform dependent python packages and libs
-requirements.txt
+#requirements.txt
 
 # Secret key to upload to Google Cloud Storage
 app/config/secret
