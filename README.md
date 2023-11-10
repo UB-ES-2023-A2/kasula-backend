@@ -1,4 +1,6 @@
 # Kasulà - Backend
+
+Pre-release deployed on: https://kasula-v7-5q5vehm3ja-ew.a.run.app/
   
 KASULÀ is a webpage where you can view and share recipes that mean the world to you.
 
