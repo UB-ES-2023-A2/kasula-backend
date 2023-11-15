@@ -103,6 +103,19 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
+@router.get("/user/{username}", response_description="List all recipes by a specific username")
+async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depends(get_database)):
+    # Find the target user by username
+    target_user = await db["users"].find_one({"username": username})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Use the user_id of the found user to query recipes
+    recipes = []
+    for doc in await db["recipes"].find({"user_id": target_user["_id"]}).to_list(length=100):
+        recipes.append(doc)
+    return recipes
+
 
 # Upload recipe image (locally for now)
 from fastapi import UploadFile
@@ -140,27 +153,3 @@ async def upload_image(file : UploadFile, name):
     os.remove(save_to)
     
     return fullname
-
-
-'''
-# OLD, Using Token that expires every hour
-GOOGLE_CLOUD_TOKEN = os.getenv("GOOGLE_CLOUD_TOKEN")
-def upload_image_old(data, name):
-    headers = {
-        'Authorization': GOOGLE_CLOUD_TOKEN, # Needs to be refreshed every hour.......
-        'Content-Type': 'image/jpeg',
-    }
-    params = {
-        'uploadType': 'media',
-        'name': f'recipes/{name}'
-    }
-    print(headers)
-    print(params)
-    response = requests.post(
-        'https://storage.googleapis.com/upload/storage/v1/b/bucket-kasula_images/o',
-        headers=headers,
-        params=params,
-        data=data)
-
-    return response.json()
-'''
