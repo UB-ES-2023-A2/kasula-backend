@@ -249,11 +249,11 @@ def send_email(email: str, verification_code: int):
     receiver_email = email
     password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
     message = f"""\
-From: Kasulà <{sender_email}>
-To: {receiver_email}
-Subject: Password Recovery
+    From: Kasulà <{sender_email}>
+    To: {receiver_email}
+    Subject: Password Recovery
 
-Your verification code is: {verification_code}"""
+    Your verification code is: {verification_code}"""
 
     message = message.encode("utf-8")
     context = ssl.create_default_context()
@@ -270,11 +270,11 @@ def send_welcome_email(email: str):
     receiver_email = email
     password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
     message = f"""\
-From: Kasulà <{sender_email}>
-To: {receiver_email}
-Subject: Welcome to Kasulà!
+    From: Kasulà <{sender_email}>
+    To: {receiver_email}
+    Subject: Welcome to Kasulà!
 
-Thank you for registering with us! We are excited to have you on board."""
+    Thank you for registering with us! We are excited to have you on board."""
 
     message = message.encode("utf-8")
     context = ssl.create_default_context()
