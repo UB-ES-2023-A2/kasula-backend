@@ -1,8 +1,9 @@
 import random
 from .common import *
 from typing import Optional
+from datetime import datetime
+from pydantic import BaseModel, Field
 import uuid
-
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=uuid.uuid4, alias="_id")
@@ -11,6 +12,7 @@ class UserModel(BaseModel):
     password: str = Field(...)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
+    joining_date: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         populate_by_name = True
