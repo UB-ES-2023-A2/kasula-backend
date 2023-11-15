@@ -263,21 +263,21 @@ def send_email(email: str, verification_code: int):
             sender_email, receiver_email, message)
         print("Email sent")
 
-def send_welcome_email(email: str):
-    port = 465  # For SSL
-    smtp_server = "smtp.gmail.com"
-    sender_email = os.environ.get('EMAIL_USER')  # Fetching from environment variable
-    receiver_email = email
-    password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
-    message = f"""\
-    From: Kasulà <{sender_email}>
-    To: {receiver_email}
-    Subject: Welcome to Kasulà!
+# def send_welcome_email(email: str):
+#     port = 465  # For SSL
+#     smtp_server = "smtp.gmail.com"
+#     sender_email = os.environ.get('EMAIL_USER')  # Fetching from environment variable
+#     receiver_email = email
+#     password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
+#     message = f"""\
+#     From: Kasulà <{sender_email}>
+#     To: {receiver_email}
+#     Subject: Welcome to Kasulà!
 
-    Thank you for registering with us! We are excited to have you on board."""
+#     Thank you for registering with us! We are excited to have you on board."""
 
-    message = message.encode("utf-8")
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message)
+#     message = message.encode("utf-8")
+#     context = ssl.create_default_context()
+#     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+#         server.login(sender_email, password)
+#         server.sendmail(sender_email, receiver_email, message)
