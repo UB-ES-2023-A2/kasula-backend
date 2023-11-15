@@ -53,7 +53,7 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
         created_user["_id"] = str(created_user["_id"])
 
     # Send welcome email after successful user creation
-    send_welcome_email(user_email)
+    # send_welcome_email(user_email)
     
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
 
