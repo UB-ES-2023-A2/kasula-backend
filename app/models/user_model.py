@@ -2,6 +2,7 @@ import random
 from .common import *
 from typing import Optional
 import uuid
+from typing import List
 
 
 class UserModel(BaseModel):
@@ -11,6 +12,8 @@ class UserModel(BaseModel):
     password: str = Field(...)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
+    followers: List[str] = Field(default_factory=list)
+    following: List[str] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True
