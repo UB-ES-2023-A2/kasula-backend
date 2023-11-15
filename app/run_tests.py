@@ -13,7 +13,7 @@ from tests import test_user_endpoints, test_recipe_endpoints
 from tests.test_user_endpoints import TestAssertionError
 
 async def clear_collections():
-    await app.mongodb["user"].drop()
+    await app.mongodb["users"].drop()
     await app.mongodb["recipe"].drop()
 
 def initialize():
