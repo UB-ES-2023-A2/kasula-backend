@@ -30,7 +30,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_db_client():
-    print('Print Starting')
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
     print("Print Connected to DB" + settings.DB_URL + settings.DB_NAME)
