@@ -17,6 +17,7 @@ class RecipeModel(BaseModel):
     energy: Optional[int] = Field(None)
     user_id: Optional[str] = Field(None)
     creation_date: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         populate_by_name = True
@@ -57,6 +58,7 @@ class UpdateRecipeModel(BaseModel):
     difficulty: Optional[int] = Field(None)
     image: Optional[str] = Field(None)
     energy: Optional[int] = Field(None)
+    updated_at: Optional[datetime] = None
 
     class Config:
         json_schema_extra = {

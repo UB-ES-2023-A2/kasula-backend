@@ -5,6 +5,7 @@ from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile
+from datetime import datetime
 import json
 import requests
 import os
@@ -63,6 +64,9 @@ async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
 
     # Update the recipe in the database.
     recipe = {k: v for k, v in recipe.model_dump().items() if v is not None}
+
+    # Set updated_at to current datetime
+    recipe.updated_at = datetime.utcnow()
 
     if len(recipe) >= 1:
         update_result = await db["recipes"].update_one(
