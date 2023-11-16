@@ -1,10 +1,10 @@
 import asyncio
-from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.config import settings
 from app_definition import app
 
@@ -16,14 +16,16 @@ async def clear_collections():
     await app.mongodb["users"].drop()
     await app.mongodb["recipe"].drop()
 
-def initialize():
-    # Connect to the MongoDB database
-    app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
-    app.mongodb = app.mongodb_client[settings.DB_NAME]
 
-    # Clear collections
+# Connect to the Database and clear the collections
+def initialize():
+
+    app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
+    app.mongodb = app.mongodb_client[settings.DB_TEST]
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(clear_collections())
+    app.mongodb_client.close()
 
     print("\nConnected to the test database and cleared collections.\n")
 
@@ -46,13 +48,11 @@ def run_single_test(test_func):
 
     return result
 
-def cleanup():
-    # Disconnect from the MongoDB database
-    app.mongodb_client.close()
-
-    print("\nDisconnected from the test database.\n")
-
 def run_tests():
+    
+    # Change the database for tests because we need to clear all the collections
+    settings.DB_NAME = settings.DB_TEST
+
     initialize()
     
     user_test_functions = [
@@ -90,7 +90,8 @@ def run_tests():
     print("=" * 40 + "\n")
     [run_single_test(test_func) for test_func in recipe_test_functions]
     
-    cleanup()
+    # cleanup() # Maybe in the future we should only connect once to the Database
+    # to fasten up the test execution but right now it is not a priority
 
 if __name__ == "__main__":
     run_tests()
