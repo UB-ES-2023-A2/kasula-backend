@@ -8,16 +8,9 @@ from app.routers import user_router, recipe_router
 
 app = FastAPI()
 
-origins = [
-    "*" # Allow all origins for development
-
-    """
-    "http://localhost:3000", # Crec que no l'hauria de necessitar, tot i que un cop sense semblava que no funcionava
-    "http://127.0.0.1:3000",
-    "http://0.0.0.0:8000",
-    "http://127.0.0.1:8000",
-    """
-]
+# Allow all origins for development purposes, to be able to use
+# the local / deployed backend either with a local or deployed frontend.
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
