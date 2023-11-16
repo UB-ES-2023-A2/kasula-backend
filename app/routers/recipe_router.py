@@ -62,15 +62,15 @@ async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     if existing_recipe.get("user_id") != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
-    # Update the recipe in the database.
-    recipe = {k: v for k, v in recipe.model_dump().items() if v is not None}
+    # Convert UpdateRecipeModel to a dictionary and update fields if not None
+    recipe_dict = {k: v for k, v in recipe.dict().items() if v is not None}
 
     # Set updated_at to current datetime
-    recipe.updated_at = datetime.utcnow()
+    recipe_dict['updated_at'] = datetime.utcnow()
 
-    if len(recipe) >= 1:
+    if len(recipe_dict) >= 1:
         update_result = await db["recipes"].update_one(
-            {"_id": id}, {"$set": recipe}
+            {"_id": id}, {"$set": recipe_dict}
         )
 
         if update_result.modified_count == 1:
