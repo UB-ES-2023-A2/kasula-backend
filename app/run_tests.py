@@ -14,7 +14,7 @@ from tests.test_user_endpoints import TestAssertionError
 
 async def clear_collections():
     await app.mongodb["users"].drop()
-    await app.mongodb["recipe"].drop()
+    await app.mongodb["recipes"].drop()
 
 
 # Connect to the Database and clear the collections
