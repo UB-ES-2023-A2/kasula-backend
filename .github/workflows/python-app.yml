@@ -6,7 +6,7 @@ env:
   DB_NAME: ${{secrets.DB_NAME}}
   DB_TEST: ${{secrets.DB_TEST}}
   EMAIL_USER: ${{secrets.EMAIL_USER}}
-  EMAIL_PASSWORD: ${{secrets.EMAIL_PASSWORD}}
+  EMAIL_PASS: ${{secrets.EMAIL_PASS}}
 
 on: [push]
 
