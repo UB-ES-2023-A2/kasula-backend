@@ -250,22 +250,22 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
     if not target_user:
         raise HTTPException(status_code=404, detail=f"User {username} not found")
 
-    user_id = str(target_user["_id"])
+    target_username = target_user["username"]
 
     # Prevent self-follow
-    if user_id == current_user["user_id"]:
+    if target_username == current_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"_id": current_user["user_id"]},
-        {"$addToSet": {"following": user_id}}
+        {"username": current_user["username"]},
+        {"$addToSet": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
-        {"_id": user_id},
-        {"$addToSet": {"followers": current_user["user_id"]}}
+        {"username": target_username},
+        {"$addToSet": {"followers": current_user["username"]}}
     )
 
     return {"message": f"Now following user {username}"}
@@ -277,22 +277,22 @@ async def unfollow_user(username: str, current_user: str = Depends(get_current_u
     if not target_user:
         raise HTTPException(status_code=404, detail=f"User {username} not found")
 
-    user_id = str(target_user["_id"])
+    target_username = target_user["username"]
 
     # Prevent self-unfollow (which doesn't make sense but just in case)
-    if user_id == current_user["user_id"]:
+    if target_username == current_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"_id": current_user["user_id"]},
-        {"$pull": {"following": user_id}}
+        {"username": current_user["username"]},
+        {"$pull": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
-        {"_id": user_id},
-        {"$pull": {"followers": current_user["user_id"]}}
+        {"username": target_username},
+        {"$pull": {"followers": current_user["username"]}}
     )
 
     return {"message": f"Unfollowed user {username}"}
