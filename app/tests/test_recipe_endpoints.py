@@ -34,7 +34,7 @@ def delete_created_recipe(recipe_id: str, token: str):
         # Assuming there's a DELETE endpoint for the recipe
         response = client.delete(f"/recipe/{recipe_id}", headers=headers)
         if response.status_code != 200:
-            raise TestCleanupError(response=response)
+            raise TestAssertionError(response=response)
 
 def delete_created_user(user_id, access_token):
     headers = {
