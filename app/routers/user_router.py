@@ -242,6 +242,61 @@ async def update_password(email: str, verification_code: int, user: UpdateUserMo
 
     raise HTTPException(status_code=404, detail=f"Email {email} not found")
 
+@router.post("/follow/{username}", response_description="Follow a user by username")
+async def follow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Find the target user by username
+    target_user = await db["users"].find_one({"username": username})
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail=f"User {username} not found")
+
+    target_username = target_user["username"]
+
+    # Prevent self-follow
+    if target_username == current_user["username"]:
+        raise HTTPException(status_code=400, detail="Cannot follow yourself")
+
+    # Update the current user's following list
+    await db["users"].update_one(
+        {"username": current_user["username"]},
+        {"$addToSet": {"following": target_username}}
+    )
+
+    # Update the target user's followers list
+    await db["users"].update_one(
+        {"username": target_username},
+        {"$addToSet": {"followers": current_user["username"]}}
+    )
+
+    return {"message": f"Now following user {username}"}
+
+@router.post("/unfollow/{username}", response_description="Unfollow a user by username")
+async def unfollow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Find the target user by username
+    target_user = await db["users"].find_one({"username": username})
+    if not target_user:
+        raise HTTPException(status_code=404, detail=f"User {username} not found")
+
+    target_username = target_user["username"]
+
+    # Prevent self-unfollow (which doesn't make sense but just in case)
+    if target_username == current_user["username"]:
+        raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
+
+    # Update the current user's following list
+    await db["users"].update_one(
+        {"username": current_user["username"]},
+        {"$pull": {"following": target_username}}
+    )
+
+    # Update the target user's followers list
+    await db["users"].update_one(
+        {"username": target_username},
+        {"$pull": {"followers": current_user["username"]}}
+    )
+
+    return {"message": f"Unfollowed user {username}"}
+
 
 def send_email(email: str, verification_code: int):
     port = 465  # For SSL
@@ -262,7 +317,6 @@ def send_email(email: str, verification_code: int):
         server.login(sender_email, password)
         server.sendmail(
             sender_email, receiver_email, message)
-        print("Email sent")
 
 def send_welcome_email(email: str):
     port = 465  # For SSL
