@@ -3,6 +3,7 @@ from app.models.user_model import UserModel, UpdateUserModel, PasswordRecoveryMo
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
+from email.mime.text import MIMEText
 
 import random
 import smtplib
@@ -29,7 +30,7 @@ def is_valid_email(email: str) -> bool:
 
 @router.post("/", response_description="Add new user")
 async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIOMotorClient = Depends(get_database)):
-
+    user_email = user.email
     # Check if email has a valid format
     if not is_valid_email(user.email):
         raise HTTPException(
@@ -51,6 +52,10 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
 
     if isinstance(created_user["_id"], ObjectId):
         created_user["_id"] = str(created_user["_id"])
+
+    # Send welcome email after successful user creation
+    send_welcome_email(user_email)
+    
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
 
 
@@ -300,15 +305,35 @@ def send_email(email: str, verification_code: int):
     receiver_email = email
     password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
     message = f"""\
-From: Sup Kasula <{sender_email}>
-To: {receiver_email}
-Subject: Password Recovery
+    From: Kasulà <{sender_email}>
+    To: {receiver_email}
+    Subject: Password Recovery
 
-Your verification code is: {verification_code}"""
+    Your verification code is: {verification_code}"""
 
+    message = message.encode("utf-8")
     context = ssl.create_default_context()
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(
             sender_email, receiver_email, message)
-        print("Email sent")
+
+def send_welcome_email(email: str):
+    port = 465  # For SSL
+    smtp_server = "smtp.gmail.com"
+    sender_email = os.environ.get('EMAIL_USER')  # Fetching from environment variable
+    receiver_email = email
+    password = os.environ.get('EMAIL_PASS')      # Fetching from environment variable
+
+    # Create the email message
+    subject = "Welcome to Kasulà!"
+    body = "Thank you for registering with us! We are excited to have you on board."
+    message = MIMEText(body, 'plain')
+    message['From'] = f"Kasulà <{sender_email}>"
+    message['To'] = receiver_email
+    message['Subject'] = subject
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+        server.login(sender_email, password)
+        server.send_message(message)
