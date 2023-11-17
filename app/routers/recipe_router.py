@@ -20,7 +20,7 @@ def get_database(request: Request):
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), file: UploadFile | None = None, current_user: UserModel = Depends(get_current_user)):
     recipe_dict = json.loads(recipe)  # Deserializar la cadena JSON en un diccionario
     recipe_model = RecipeModel(**recipe_dict)
-    recipe_model.user_id = current_user["user_id"]
+    recipe_model.username = current_user["username"]
 
     if not file:
         recipe_model.image = 'None'

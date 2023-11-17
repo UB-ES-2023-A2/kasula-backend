@@ -15,7 +15,7 @@ class RecipeModel(BaseModel):
     difficulty: int = Field(default=0)
     image: Optional[str] = Field(None)
     energy: Optional[int] = Field(None)
-    user_id: Optional[str] = Field(None)
+    username: Optional[str] = Field(None)
     creation_date: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
