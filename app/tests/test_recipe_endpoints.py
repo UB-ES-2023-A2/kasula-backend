@@ -156,9 +156,7 @@ def test_show_recipe():
             "image": "None"
         }
         response_original = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
-        print('WWWWWWWW')
         print(response_original.json())
-        print('WWWWWWWW')
         created_recipe_id = response_original.json()["_id"]
 
         # Test getting a single recipe by ID

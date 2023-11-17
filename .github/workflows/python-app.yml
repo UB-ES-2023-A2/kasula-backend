@@ -3,9 +3,10 @@ name: Backend Unit Tests
 env:
   DB_URL: ${{secrets.DB_URL}}
   SECRET_KEY: ${{secrets.SECRET_KEY}}
-  DB_TEST: ${{secrets.DB_NAME}}
-  TEST_MODE: ${{secrets.TEST_MODE}}
   DB_NAME: ${{secrets.DB_NAME}}
+  DB_TEST: ${{secrets.DB_TEST}}
+  EMAIL_USER: ${{secrets.EMAIL_USER}}
+  EMAIL_PASS: ${{secrets.EMAIL_PASS}}
 
 on: [push]
 
@@ -33,4 +34,4 @@ jobs:
       
       - name: Run tests
         run: |
-          pytest
+          python app/run_tests.py
