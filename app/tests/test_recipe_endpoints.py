@@ -126,7 +126,7 @@ def test_show_recipe():
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+        user_id = response_user.json()["user_id"]
 
         headers = {
             "Authorization": f"Bearer {access_token}"
@@ -189,7 +189,7 @@ def test_update_recipe():
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+        user_id = response_user.json()["user_id"]
 
         headers = {
             "Authorization": f"Bearer {access_token}"
@@ -250,7 +250,7 @@ def test_delete_recipe():
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+        user_id = response_user.json()["user_id"]
 
         headers = {
             "Authorization": f"Bearer {access_token}"
