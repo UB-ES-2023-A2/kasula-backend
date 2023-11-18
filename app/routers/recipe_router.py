@@ -3,11 +3,12 @@ from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
-from fastapi import Form, UploadFile
+from fastapi import Form, UploadFile, File
 from datetime import datetime
 from google.cloud import storage
 import time
 from pathlib import Path
+from typing import List
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -21,21 +22,26 @@ def get_database(request: Request):
     return request.app.mongodb
 
 @router.post("/", response_description="Add new recipe")
-async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), file: UploadFile | None = None, current_user: UserModel = Depends(get_current_user)):
-    recipe_dict = json.loads(recipe)  # Deserializar la cadena JSON en un diccionario
+async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), files: List[UploadFile] = File(None), current_user: UserModel = Depends(get_current_user)):
+    recipe_dict = json.loads(recipe)  # Deserialize the JSON string into a dictionary
     recipe_model = RecipeModel(**recipe_dict)
     recipe_model.username = current_user["username"]
 
-    if not file:
-        recipe_model.image = 'None'
-    else:
+    image_urls = []
+    for file in files:
         fullname = await upload_image(file, file.filename)
-        recipe_model.image = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'  # Usar f-string correctamente
+        image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+        image_urls.append(image_url)
+
+    recipe_model.images = image_urls  # Set the images field with the list of URLs
 
     recipe_dict = jsonable_encoder(recipe_model)
-
     new_recipe = await db["recipes"].insert_one(recipe_dict)
     created_recipe = await db["recipes"].find_one({"_id": new_recipe.inserted_id})
+
+    if created_recipe is None:
+        raise HTTPException(status_code=404, detail=f"Recipe could not be created")
+
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_recipe)
 
 
