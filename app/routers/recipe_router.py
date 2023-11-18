@@ -27,13 +27,16 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
     recipe_model = RecipeModel(**recipe_dict)
     recipe_model.username = current_user["username"]
 
-    image_urls = []
-    for file in files:
-        fullname = await upload_image(file, file.filename)
-        image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
-        image_urls.append(image_url)
+    if not files:
+        recipe_model.images = []
+    else:
+        image_urls = []
+        for file in files:
+            fullname = await upload_image(file, file.filename)
+            image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+            image_urls.append(image_url)
 
-    recipe_model.images = image_urls  # Set the images field with the list of URLs
+        recipe_model.images = image_urls  # Set the images field with the list of URLs
 
     recipe_dict = jsonable_encoder(recipe_model)
     new_recipe = await db["recipes"].insert_one(recipe_dict)
