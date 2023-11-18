@@ -31,14 +31,23 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     if recipe.get("username") == current_user["username"]:
         raise HTTPException(status_code=403, detail="Creators cannot review their own recipes")
 
+    # Check if the recipe is public or if the current user follows the recipe owner
+    if not recipe.get("is_public", True):
+        recipe_owner = await db["users"].find_one({"username": recipe["username"]})
+
+        if current_user["username"] not in recipe_owner.get("followers", []):
+            raise HTTPException(status_code=403, detail="Cannot review a private recipe without following the creator of the recipe")
+
     # Check if the current user has already reviewed this recipe
     if any(review["username"] == current_user["username"] for review in recipe.get("reviews", [])):
         raise HTTPException(status_code=400, detail="User has already reviewed this recipe")
 
-    review_dict = json.loads(review)  # Deserialize the JSON string into a dictionary
+    # Deserialize and handle the review
+    review_dict = json.loads(review)
     review_model = ReviewModel(**review_dict)
 
     if file:
+        # Handle file upload and set image URL
         fullname = await upload_image(file, file.filename)
         review_model.image = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
     else:
@@ -52,17 +61,16 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
         {"_id": recipe_id}, {"$push": {"reviews": review_dict}}
     )
 
-    # Recalculate average rating
+    # Recalculate average rating and update it
     updated_recipe = await db["recipes"].find_one({"_id": recipe_id})
     new_average_rating = calculate_average_rating(updated_recipe["reviews"])
-
-    # Update the average rating in the database
     await db["recipes"].update_one(
         {"_id": recipe_id}, {"$set": {"average_rating": new_average_rating}}
     )
 
     if update_result.modified_count == 1:
         return {"message": "Review added successfully"}
+
     raise HTTPException(status_code=500, detail="Failed to add review")
 
 
