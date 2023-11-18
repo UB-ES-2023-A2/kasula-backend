@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from .common import *
 
 from app.models.review_model import ReviewModel, UpdateReviewModel
@@ -6,6 +6,14 @@ from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile
 from datetime import datetime
+from pathlib import Path
+from google.cloud import storage
+import json
+import time
+import os
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
 
 router = APIRouter()
 
@@ -13,22 +21,33 @@ def get_database(request: Request):
     return request.app.mongodb
 
 @router.post("/{recipe_id}", response_description="Add a review to a recipe")
-async def add_review(recipe_id: str, review: ReviewModel, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
+async def add_review(recipe_id: str, review: str = Form(...), file: Optional[UploadFile] = None, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
     # Find the recipe by ID
     recipe = await db["recipes"].find_one({"_id": recipe_id})
     if not recipe:
         raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
-    # Check if the current user has already reviewed the recipe
-    for existing_review in recipe.get("reviews", []):
-        if existing_review.get("username") == current_user["username"]:
-            raise HTTPException(status_code=400, detail="You have already reviewed this recipe")
+    # Check if the current user is the creator of the recipe
+    if recipe.get("username") == current_user["username"]:
+        raise HTTPException(status_code=403, detail="Creators cannot review their own recipes")
 
-    # Add the username to the review and create the review
-    review.username = current_user["username"]
-    review_dict = jsonable_encoder(review)
+    # Check if the current user has already reviewed this recipe
+    if any(review["username"] == current_user["username"] for review in recipe.get("reviews", [])):
+        raise HTTPException(status_code=400, detail="User has already reviewed this recipe")
 
-    # Update the recipe with the new review
+    review_dict = json.loads(review)  # Deserialize the JSON string into a dictionary
+    review_model = ReviewModel(**review_dict)
+
+    if file:
+        fullname = await upload_image(file, file.filename)
+        review_model.image = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+    else:
+        review_model.image = None
+
+    review_model.username = current_user["username"]
+    review_dict = jsonable_encoder(review_model)
+
+    # Add the review to the recipe
     update_result = await db["recipes"].update_one(
         {"_id": recipe_id}, {"$push": {"reviews": review_dict}}
     )
@@ -59,9 +78,6 @@ async def update_review(recipe_id: str, review_id: str, update_data: UpdateRevie
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
 
-    print("REVIEW: ", review)
-
-    print("CURRENT_USER: ", current_user)
     if review["username"] != current_user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this review")
     
@@ -171,3 +187,21 @@ def calculate_average_rating(reviews: List[dict]) -> float:
         return 0.0
     total_rating = sum(review['rating'] for review in reviews if 'rating' in review)
     return total_rating / len(reviews)
+
+async def upload_image(file : UploadFile, name):
+    storage_client = storage.Client(project=project_name)
+    bucket = storage_client.get_bucket(bucket_name)
+    point = name.rindex('.')
+    fullname = 'reviews/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    blob = bucket.blob(fullname)
+    
+    data = await file.read()
+
+    UPLOAD_DIR = Path('')
+    save_to = UPLOAD_DIR / file.filename
+    with open(save_to, "wb") as f:
+        f.write(data)
+    blob.upload_from_filename(save_to)
+    os.remove(save_to)
+    
+    return fullname
