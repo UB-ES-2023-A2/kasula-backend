@@ -1,6 +1,7 @@
 from .common import *
 from .ingredient_model import RecipeIngredient
 from .instruction_model import InstructionModel
+from .review_model import ReviewModel
 from typing import List
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -18,6 +19,8 @@ class RecipeModel(BaseModel):
     username: Optional[str] = Field(None)
     creation_date: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    reviews: List[ReviewModel] = Field(default_factory=list)
+    average_rating: Optional[float] = Field(None)
 
     class Config:
         populate_by_name = True

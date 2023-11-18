@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-from app.routers import user_router, recipe_router
+from app.routers import user_router, recipe_router, review_router
 
 
 app = FastAPI()
@@ -36,6 +36,7 @@ async def shutdown_db_client():
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")
 app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
+app.include_router(review_router.router, tags=["reviews"], prefix="/review")
 
 @app.get("/")
 async def root():

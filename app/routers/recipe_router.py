@@ -1,15 +1,19 @@
 from .common import *
-
 from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
 from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile
 from datetime import datetime
+from google.cloud import storage
+import time
+from pathlib import Path
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
 import json
 import requests
 import os
-
 
 router = APIRouter()
 
@@ -118,26 +122,6 @@ async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depen
     for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=100):
         recipes.append(doc)
     return recipes
-
-
-# Upload recipe image (locally for now)
-from fastapi import UploadFile
-from pathlib import Path
-
-@router.post("/uploadfile")
-async def create_upload_file(file: UploadFile | None = None):
-    if not file:
-        return {"message": "No upload file sent"}
-    else:
-        fullname = await upload_image(file, file.filename)
-        return {"file_url": f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'}
-
-
-from google.cloud import storage
-import time
-
-project_name = 'kasula'
-bucket_name = 'bucket-kasula_images'
 
 async def upload_image(file : UploadFile, name):
     storage_client = storage.Client(project=project_name)
