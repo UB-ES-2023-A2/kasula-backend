@@ -23,9 +23,22 @@ def get_database(request: Request):
 
 @router.post("/", response_description="Add new recipe")
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), files: List[UploadFile] = File(None), current_user: UserModel = Depends(get_current_user)):
+    # Retrieve the current user from the database
+    user = await db["users"].find_one({"username": current_user["username"]})
+
+    if user is None:
+        raise HTTPException(status_code=404, detail=f"User not found")
+
+    # Get the value of the "is_private" key for the current user
+    is_private = user.get("is_private", False)
+
     recipe_dict = json.loads(recipe)  # Deserialize the JSON string into a dictionary
     recipe_model = RecipeModel(**recipe_dict)
     recipe_model.username = current_user["username"]
+
+    recipe_model.is_public = not is_private
+
+    recipe_model.average_rating = 0.0
 
     if not files:
         recipe_model.images = []
@@ -51,16 +64,26 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
 @router.get("/", response_description="List all recipes")
 async def list_recipes(db: AsyncIOMotorClient = Depends(get_database)):
     recipes = []
-    for doc in await db["recipes"].find().to_list(length=100):
+    for doc in await db["recipes"].find({"is_public": True}).to_list(length=100):
         recipes.append(doc)
+
+    if not recipes:
+        return "There are no recipes to show at the moment"
+
     return recipes
 
 @router.get("/{id}", response_description="Get a single recipe given its id")
 async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database)):
-    if (recipe := await db["recipes"].find_one({"_id": id})) is not None:
-        return recipe
+    recipe = await db["recipes"].find_one({"_id": id})
 
-    raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+    if recipe is not None:
+        if recipe.get("is_public", False):
+            return recipe
+        else:
+            raise HTTPException(status_code=403, detail=f"The given recipe is not public")
+    else:
+        raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
 
 @router.put("/{id}", response_description="Update a recipe")
 async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), recipe: UpdateRecipeModel = Body(...), current_user: UserModel = Depends(get_current_user)):

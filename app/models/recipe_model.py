@@ -22,6 +22,7 @@ class RecipeModel(BaseModel):
     reviews: List[ReviewModel] = Field(default_factory=list)
     average_rating: Optional[float] = Field(None)
     history: Optional[str] = Field(None, description="Personal note or history of the recipe")
+    is_public: bool = Field(default=True)
 
     class Config:
         populate_by_name = True
@@ -64,6 +65,7 @@ class UpdateRecipeModel(BaseModel):
     energy: Optional[int] = Field(None)
     updated_at: Optional[datetime] = None
     history: Optional[str] = Field(None, description="Personal note or history of the recipe")
+    is_public: Optional[bool] = Field(None)
 
     class Config:
         json_schema_extra = {
