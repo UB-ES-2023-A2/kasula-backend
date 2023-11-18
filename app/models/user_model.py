@@ -16,6 +16,7 @@ class UserModel(BaseModel):
     followers: List[str] = Field(default_factory=list)
     following: List[str] = Field(default_factory=list)
     joining_date: datetime = Field(default_factory=datetime.utcnow)
+    is_private: bool = Field(default=False)
 
     class Config:
         populate_by_name = True
@@ -37,6 +38,7 @@ class UpdateUserModel(BaseModel):
     password: Optional[str] = Field(None)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
+    is_private: Optional[bool] = Field(None)
 
     class Config:
         json_schema_extra = {
