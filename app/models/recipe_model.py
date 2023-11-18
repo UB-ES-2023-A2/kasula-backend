@@ -21,6 +21,7 @@ class RecipeModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     reviews: List[ReviewModel] = Field(default_factory=list)
     average_rating: Optional[float] = Field(None)
+    history: Optional[str] = Field(None, description="Personal note or history of the recipe")
 
     class Config:
         populate_by_name = True
@@ -62,6 +63,7 @@ class UpdateRecipeModel(BaseModel):
     image: Optional[str] = Field(None)
     energy: Optional[int] = Field(None)
     updated_at: Optional[datetime] = None
+    history: Optional[str] = Field(None, description="Personal note or history of the recipe")
 
     class Config:
         json_schema_extra = {
