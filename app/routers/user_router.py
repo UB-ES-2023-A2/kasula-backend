@@ -65,6 +65,7 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
     for doc in await db["users"].find().to_list(length=100):
         if isinstance(doc["_id"], ObjectId):
             doc["_id"] = str(doc["_id"])
+        doc.pop("password", None)  # Remove the password field
         users.append(doc)
     return users
 
@@ -74,6 +75,7 @@ async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotor
     user = await db["users"].find_one({"username": current_user["username"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string
+        user.pop("password", None)  # Remove the password field
         return user
     raise HTTPException(status_code=404, detail="User not found")
 
@@ -83,6 +85,7 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
     if (user := await db["users"].find_one({"_id": id})) is not None:
         # Convert ObjectId back to string for the response
         user["_id"] = str(user["_id"])
+        user.pop("password", None)  # Remove the password field
         return user
 
     raise HTTPException(status_code=404, detail=f"User {id} not found")
