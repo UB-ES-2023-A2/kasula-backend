@@ -31,10 +31,10 @@ def delete_created_recipe(recipe_id: str, token: str):
         "Authorization": f"Bearer {token}"
     }
     with TestClient(app) as client:
-        # Assuming there's a DELETE endpoint for the recipe
         response = client.delete(f"/recipe/{recipe_id}", headers=headers)
+
         if response.status_code != 200:
-            raise TestCleanupError(response=response)
+            raise TestAssertionError(response=response)
 
 def delete_created_user(user_id, access_token):
     headers = {
@@ -51,6 +51,7 @@ def test_create_recipe():
             "email": "testuser@example.com",
             "password": "testpassword"
         }
+
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
@@ -69,7 +70,6 @@ def test_create_recipe():
 
         # Test creating a new recipe
         recipe = {
-            'id': 'fuck off',
             "name": "Glass of Water",
             "ingredients": [
                 {
@@ -91,10 +91,9 @@ def test_create_recipe():
             "cooking_time": 1,
             "difficulty": 0
         }
-        # ChatGPT OP
+
         data = {
             "recipe": (None, json.dumps(recipe), "application/json"),
-            #"file": ("filename.txt", open("app/tests/tomate-frito-casero.jpg", "rb"))
         }
         response = client.post("/recipe/", files=data, headers=headers)
 
@@ -123,9 +122,12 @@ def test_show_recipe():
             "email": "testuser@example.com",
             "password": "testpassword"
         }
+
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
+
+        print("RESPONSE USER SHOW RECIPE: {}".format(response_user.json()))
         user_id = response_user.json()["_id"]
 
         headers = {
@@ -189,6 +191,7 @@ def test_update_recipe():
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
+
         user_id = response_user.json()["_id"]
 
         headers = {
@@ -250,6 +253,7 @@ def test_delete_recipe():
         response_user = client.post("/user/", json=user)
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
+
         user_id = response_user.json()["_id"]
 
         headers = {
