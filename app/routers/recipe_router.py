@@ -24,7 +24,7 @@ def get_database(request: Request):
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), file: UploadFile | None = None, current_user: UserModel = Depends(get_current_user)):
     recipe_dict = json.loads(recipe)  # Deserializar la cadena JSON en un diccionario
     recipe_model = RecipeModel(**recipe_dict)
-    recipe_model.user_id = current_user["user_id"]
+    recipe_model.username = current_user["username"]
 
     if not file:
         recipe_model.image = 'None'
@@ -63,7 +63,7 @@ async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
         raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
     
     # Check if the user trying to update the recipe is the one who created it.
-    if existing_recipe.get("user_id") != current_user["user_id"]:
+    if existing_recipe.get("username") != current_user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
     # Convert UpdateRecipeModel to a dictionary and update fields if not None
@@ -100,7 +100,7 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
         raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
     # Check if the user trying to delete the recipe is the one who created it.
-    if existing_recipe.get("user_id") != current_user["user_id"]:
+    if existing_recipe.get("username") != current_user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 
     # Delete the recipe from the database.
@@ -118,9 +118,8 @@ async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depen
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Use the user_id of the found user to query recipes
     recipes = []
-    for doc in await db["recipes"].find({"user_id": target_user["_id"]}).to_list(length=100):
+    for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=100):
         recipes.append(doc)
     return recipes
 
