@@ -2,6 +2,10 @@ name: Deploy to Cloud Run 2
     
 on: [push]
 
+env:
+  # Setting an environment variable with the value of a configuration variable
+  env_var: ${{ vars.ENV_CONTEXT_VAR }}
+
 jobs:
   job_id:
 
@@ -26,6 +30,18 @@ jobs:
 
     - name: 'Use gcloud CLI'
       run: 'gcloud info'
+
+    - name: Use variables
+      run: |
+        echo "repository variable : $REPOSITORY_VAR"
+        echo "organization variable : $ORGANIZATION_VAR"
+        echo "overridden variable : $OVERRIDE_VAR"
+        echo "variable from shell environment : $env_var"      
+    
+    # - name: 'User variable'
+    #   run: |
+    #     echo "Hello %TAG_NAME%! a ${{env.TAG_NAME}}"
+    
     
     # - name: 'Deploy using gcloud CLI'
     #   run: |
