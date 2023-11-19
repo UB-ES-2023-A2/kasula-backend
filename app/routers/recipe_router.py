@@ -118,14 +118,15 @@ async def update_recipe(
         recipe_update = {k: v for k, v in recipe_model.dict().items() if v is not None}
 
     # Image processing and uploading
-    image_urls = []
-    for file in files:
-        fullname = await upload_image(file, file.filename)
-        image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
-        image_urls.append(image_url)
+    if files:
+        image_urls = []
+        for file in files:
+            fullname = await upload_image(file, file.filename)
+            image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+            image_urls.append(image_url)
 
-    if image_urls:
-        recipe_update['images'] = image_urls  # Replace or append to the existing images list as required
+        if image_urls:
+            recipe_update['images'] = image_urls  # Replace or append to the existing images list as required
 
     # Update logic
     if recipe_update:
