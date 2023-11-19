@@ -33,19 +33,11 @@ jobs:
 
     - name: Use variables
       run: |
-        echo "repository variable : $REPOSITORY_VAR"
-        echo "tag name: $TAG_NAME"
-        echo "organization variable : $ORGANIZATION_VAR"
-        echo "overridden variable : $OVERRIDE_VAR"
-        echo "variable from shell environment : $env_var"      
+        echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
+        echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
     
-    # - name: 'User variable'
-    #   run: |
-    #     echo "Hello %TAG_NAME%! a ${{env.TAG_NAME}}"
-    
-    
-    # - name: 'Deploy using gcloud CLI'
-    #   run: |
-    #     gcloud builds submit --tag=gcr.io/kasula/build$TAG_NAME
-    #     gcloud run deploy kasula-v7 --image gcr.io/kasula/build$TAG_NAME --update-secrets="DB_URL=DB_URL:latest,DB_NAME=DB_NAME:latest,\
-    #       SECRET_KEY=SECRET_KEY:latest,EMAIL_PASS=EMAIL_PASS:latest,EMAIL_USER=EMAIL_USER:latest"
+    - name: 'Deploy using gcloud CLI'
+      run: |
+        gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA
+        gcloud run deploy kasula-v7 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,DB_NAME=DB_NAME:latest,\
+          SECRET_KEY=SECRET_KEY:latest,EMAIL_PASS=EMAIL_PASS:latest,EMAIL_USER=EMAIL_USER:latest"
