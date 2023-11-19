@@ -17,6 +17,7 @@ class RecipeModel(BaseModel):
     images: List[str] = Field(default_factory=list)
     energy: Optional[int] = Field(None)
     username: Optional[str] = Field(None)
+    user_id: str = Field(None)
     creation_date: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     reviews: List[ReviewModel] = Field(default_factory=list)
@@ -66,6 +67,7 @@ class UpdateRecipeModel(BaseModel):
     updated_at: Optional[datetime] = None
     history: Optional[str] = Field(None, description="Personal note or history of the recipe")
     is_public: Optional[bool] = Field(None)
+    user_id: Optional[str] = Field(None)
 
     class Config:
         json_schema_extra = {

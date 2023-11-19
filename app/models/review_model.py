@@ -13,6 +13,7 @@ class ReviewModel(BaseModel):
     updated_date: datetime = Field(default_factory=datetime.utcnow)
     likes: int = Field(default=0)
     liked_by: List[str] = Field(default_factory=list)
+    user_id: str = Field(None)
 
     @validator('rating')
     def validate_rating(cls, v):
@@ -26,3 +27,4 @@ class UpdateReviewModel(BaseModel):
     image: Optional[str] = Field(None)
     updated_date: Optional[datetime] = None
     likes: Optional[int] = None
+    user_id: Optional[str] = Field(None)

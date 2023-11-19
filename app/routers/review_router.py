@@ -27,19 +27,21 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     if not recipe:
         raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Check if the current user is the creator of the recipe
-    if recipe.get("username") == current_user["username"]:
+    if recipe.get("username") == user["username"]:
         raise HTTPException(status_code=403, detail="Creators cannot review their own recipes")
 
     # Check if the recipe is public or if the current user follows the recipe owner
     if not recipe.get("is_public", True):
         recipe_owner = await db["users"].find_one({"username": recipe["username"]})
 
-        if current_user["username"] not in recipe_owner.get("followers", []):
+        if user["username"] not in recipe_owner.get("followers", []):
             raise HTTPException(status_code=403, detail="Cannot review a private recipe without following the creator of the recipe")
 
     # Check if the current user has already reviewed this recipe
-    if any(review["username"] == current_user["username"] for review in recipe.get("reviews", [])):
+    if any(review["username"] == user["username"] for review in recipe.get("reviews", [])):
         raise HTTPException(status_code=400, detail="User has already reviewed this recipe")
 
     # Deserialize and handle the review
@@ -53,7 +55,11 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     else:
         review_model.image = None
 
-    review_model.username = current_user["username"]
+    review_model.username = user["username"]
+
+    # Set user_id to the current user's ID
+    review_model.user_id = current_user["user_id"]
+
     review_dict = jsonable_encoder(review_model)
 
     # Add the review to the recipe
@@ -86,7 +92,9 @@ async def update_review(recipe_id: str, review_id: str, update_data: UpdateRevie
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
 
-    if review["username"] != current_user["username"]:
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    if review["username"] != user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this review")
     
     # Prepare update data
@@ -129,7 +137,9 @@ async def delete_review(recipe_id: str, review_id: str, db: AsyncIOMotorClient =
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
 
-    if review["username"] != current_user["username"]:
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    if review["username"] != user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this review")
     
     update_result = await db["recipes"].update_one(
@@ -167,21 +177,23 @@ async def like_review(recipe_id: str, review_id: str, current_user: UserModel = 
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe or review not found")
 
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Check if the current user has already liked the review or is trying to like their own review
     for review in recipe["reviews"]:
         if review["_id"] == review_id:
             # Check if the current user is trying to like their own review
-            if review["username"] == current_user["username"]:
+            if review["username"] == user["username"]:
                 raise HTTPException(status_code=403, detail="You cannot like your own review")
 
             # Check if the current user has already liked the review
-            if current_user["username"] in review.get("liked_by", []):
+            if user["username"] in review.get("liked_by", []):
                 raise HTTPException(status_code=400, detail="You have already liked this review")
 
             # Update the review to add the username to liked_by and increment likes
             update_result = await db["recipes"].update_one(
                 {"_id": recipe_id, "reviews._id": review_id},
-                {"$inc": {"reviews.$.likes": 1}, "$push": {"reviews.$.liked_by": current_user["username"]}}
+                {"$inc": {"reviews.$.likes": 1}, "$push": {"reviews.$.liked_by": user["username"]}}
             )
 
             if update_result.modified_count == 1:
