@@ -1,21 +1,14 @@
 on: [push]
-env:
-  # Setting an environment variable with the value of a configuration variable
-  env_var: ${{ vars.ENV_CONTEXT_VAR }}
 
 jobs:
   display-variables:
-    name: myname
+    name: variables
     # You can use configuration variables with the `vars` context for dynamic jobs
     runs-on: ubuntu-latest
     steps:
     - name: Use variables
       run: |
-        echo "repository variable : $REPOSITORY_VAR"
-        echo "organization variable : $ORGANIZATION_VAR"
-        echo "overridden variable : $OVERRIDE_VAR"
-        echo "variable from shell environment : $env_var"
-      env:
-        REPOSITORY_VAR: ${{ vars.REPOSITORY_VAR }}
-        ORGANIZATION_VAR: ${{ vars.ORGANIZATION_VAR }}
-        OVERRIDE_VAR: ${{ vars.OVERRIDE_VAR }}
+        echo "GITHUB_REPOSITORY : $GITHUB_REPOSITORY"
+        echo "GITHUB_SHA : $GITHUB_SHA"
+        echo "GITHUB_WORKFLOW : $GITHUB_WORKFLOW"
+        echo "GITHUB_ACTION : $GITHUB_ACTION"
