@@ -1,12 +1,13 @@
 name: Deploy to Cloud Run 2
 
-env:
-  DB_URL: ${{secrets.DB_URL}}
-  DB_NAME: ${{secrets.DB_NAME}}
-  SECRET_KEY: ${{secrets.SECRET_KEY}}
-  DB_TEST: ${{secrets.DB_TEST}}
-  EMAIL_USER: ${{secrets.EMAIL_USER}}
-  EMAIL_PASS: ${{secrets.EMAIL_PASS}}
+# env:
+#   DB_URL: ${{secrets.DB_URL}}
+#   DB_NAME: ${{secrets.DB_NAME}}
+#   SECRET_KEY: ${{secrets.SECRET_KEY}}
+#   DB_TEST: ${{secrets.DB_TEST}}
+#   EMAIL_USER: ${{secrets.EMAIL_USER}}
+#   EMAIL_PASS: ${{secrets.EMAIL_PASS}}
+#   HOST: ${{secrets.HOST}}
     
 on: [push]
 
@@ -43,4 +44,4 @@ jobs:
         gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA --region=europe-west1
         gcloud run deploy kasula-v8 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,\
           DB_NAME=DB_NAME:latest,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
-          EMAIL_PASS=EMAIL_PASS:latest" --region=europe-west1
+          EMAIL_PASS=EMAIL_PASS:latest,HOST=HOST:latest" --region=europe-west1
