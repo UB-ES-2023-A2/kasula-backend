@@ -6,6 +6,8 @@ from app.config import settings
 from app.routers import user_router, recipe_router, review_router
 
 
+
+
 app = FastAPI()
 
 # Allow all origins for development purposes, to be able to use
