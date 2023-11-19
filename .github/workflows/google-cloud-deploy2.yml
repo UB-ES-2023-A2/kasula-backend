@@ -35,7 +35,10 @@ jobs:
       run: |
         echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
         echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
-    
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: 'Deploy using gcloud CLI'
       run: |
         gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA
