@@ -144,7 +144,7 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
 @router.get("/user/{username}", response_description="List all recipes by a specific username")
-async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depends(get_database)):
+async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
     if not target_user:
@@ -152,7 +152,12 @@ async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depen
 
     recipes = []
     for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=100):
-        recipes.append(doc)
+        if doc.get("public") or (current_user and doc.get("username") == current_user["username"]):
+            recipes.append(doc)
+    
+    if not recipes:
+        return "Nothing to show"
+    
     return recipes
 
 async def upload_image(file : UploadFile, name):
