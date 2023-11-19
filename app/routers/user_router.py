@@ -4,6 +4,14 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
 from email.mime.text import MIMEText
+from fastapi import Form, UploadFile, File
+from google.cloud import storage
+import time
+from pathlib import Path
+from typing import List
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
 
 import random
 import smtplib
@@ -91,35 +99,67 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
 
-@router.put("/{id}", response_description="Update a user")
-async def update_user(id: str, db: AsyncIOMotorClient = Depends(get_database), user: UpdateUserModel = Body(...), current_user: str = Depends(get_current_user)):
-    # Rehash the password if it's being updated
-    if user.password:
-        user.password = hash_password(user.password)
-    user = {k: v for k, v in user.model_dump().items() if v is not None}
+from fastapi import Form, UploadFile, File, HTTPException
+from typing import List
+import json
 
-    # Compare the current_user id with the value of the id of the user we want to update
+from fastapi import Form, UploadFile, File, HTTPException, Depends
+from typing import List, Optional
+import json
+
+@router.put("/{id}", response_description="Update a user")
+async def update_user(
+    id: str, 
+    db: AsyncIOMotorClient = Depends(get_database), 
+    user: Optional[str] = Form(None),  # Make the user data optional
+    file: UploadFile | None = None,  # File upload
+    current_user: str = Depends(get_current_user)
+):
+    user_update = {}
+
+    # Only parse user data if it's provided
+    if user:
+        user_data = json.loads(user)
+        user_model = UpdateUserModel(**user_data)
+
+        if user_model.password:
+            user_model.password = hash_password(user_model.password)
+
+        user_update = {k: v for k, v in user_model.dict().items() if v is not None}
+
     if current_user["user_id"] != id:
         raise HTTPException(
             status_code=403, detail="Forbidden. You don't have permission to update this user.")
 
-    if len(user) >= 1:
+    # Image processing and uploading
+    if file:
+        fullname = await upload_image(file, file.filename)
+        image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+
+        user_update['profile_picture'] = image_url
+
+    # Ensure there's something to update
+    if user_update:
         update_result = await db["users"].update_one(
-            {"_id": id}, {"$set": user}
+            {"_id": id}, {"$set": user_update}
         )
+
+        # Update the username in all recipes created by the user
+        if 'username' in user_update:
+            await db["recipes"].update_many(
+                {"username": current_user["username"]}, {"$set": {"username": user_update["username"]}}
+            )
 
         if update_result.modified_count == 1:
             if (
                 updated_user := await db["users"].find_one({"_id": id})
             ) is not None:
-                # Convert _id to string
                 updated_user["_id"] = str(updated_user["_id"])
                 return updated_user
 
     if (
         existing_user := await db["users"].find_one({"_id": id})
     ) is not None:
-        # Convert _id to string
         existing_user["_id"] = str(existing_user["_id"])
         return existing_user
 
@@ -340,3 +380,21 @@ def send_welcome_email(email: str):
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.send_message(message)
+
+async def upload_image(file : UploadFile, name):
+    storage_client = storage.Client(project=project_name)
+    bucket = storage_client.get_bucket(bucket_name)
+    point = name.rindex('.')
+    fullname = 'users/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    blob = bucket.blob(fullname)
+    
+    data = await file.read()
+    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
+    UPLOAD_DIR = Path('')
+    save_to = UPLOAD_DIR / file.filename
+    with open(save_to, "wb") as f:
+        f.write(data)
+    blob.upload_from_filename(save_to)
+    os.remove(save_to)
+    
+    return fullname
