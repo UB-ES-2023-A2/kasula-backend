@@ -1,6 +1,5 @@
 import sys
 import os
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
@@ -33,11 +32,11 @@ async def startup_db_client():
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
 
-    print("Startup, connected to DB: " + settings.DB_URL + settings.DB_NAME)
+    # print("Startup, connected to DB: " + settings.DB_URL + settings.DB_NAME)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    print("Shutdown, closing connection to DB: " + settings.DB_URL + settings.DB_NAME)
+    # print("Shutdown, closing connection to DB: " + settings.DB_URL + settings.DB_NAME)
     app.mongodb_client.close()
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")

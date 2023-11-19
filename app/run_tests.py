@@ -1,13 +1,12 @@
 import sys
 import os
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-from app import app
+from main import app
 
 # Import the test functions
 from tests import test_user_endpoints, test_recipe_endpoints
