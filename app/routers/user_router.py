@@ -149,6 +149,11 @@ async def update_user(
             await db["recipes"].update_many(
                 {"username": current_user["username"]}, {"$set": {"username": user_update["username"]}}
             )
+            # Update the username in all reviews within the recipes
+            await db["recipes"].update_many(
+                {"reviews.username": current_user["username"]},
+                {"$set": {"reviews.$[].username": user_update["username"]}}
+            )
 
         if update_result.modified_count == 1:
             if (
