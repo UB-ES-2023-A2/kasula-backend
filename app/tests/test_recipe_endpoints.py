@@ -107,11 +107,30 @@ def test_create_recipe(client):
     delete_created_user(user_id, access_token, client)
 
 def test_list_recipes(client):
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
+
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
+
+    user_id = response_user.json()["_id"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
     # Test listing all recipes
-    response = client.get("/recipe/")
+    response = client.get("/recipe/", headers=headers)
 
     if response.status_code != 200:
+        delete_created_user(user_id, access_token, client)
         raise TestAssertionError(response=response)
+    
+    delete_created_user(user_id, access_token, client)
 
 def test_show_recipe(client):
     # Authenticate and create a test recipe
@@ -158,7 +177,7 @@ def test_show_recipe(client):
     created_recipe_id = response_original.json()["_id"]
 
     # Test getting a single recipe by ID
-    response = client.get(f"/recipe/{created_recipe_id}")
+    response = client.get(f"/recipe/{created_recipe_id}", headers=headers)
 
     if response.status_code != 200 or response.json()["_id"] != created_recipe_id:
         delete_created_recipe(created_recipe_id, access_token, client)
@@ -166,7 +185,7 @@ def test_show_recipe(client):
         raise TestAssertionError(response=response)
 
     # Test getting a non-existing recipe by ID
-    response = client.get("/recipe/1234")
+    response = client.get("/recipe/1234", headers=headers)
 
     if response.status_code != 404:
         delete_created_recipe(created_recipe_id, access_token, client)
@@ -217,6 +236,7 @@ def test_update_recipe(client):
         "difficulty": 0,
         "image": "None"
     }
+    
     response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
     created_recipe_id = response.json()["_id"]
 
@@ -225,7 +245,8 @@ def test_update_recipe(client):
         "name": "Glass of Cold Water",
         "cooking_time": 2
     }
-    response_update = client.put(f"/recipe/{created_recipe_id}", json=updated_recipe_data, headers=headers)
+    
+    response_update = client.put(f"/recipe/{created_recipe_id}", files={"recipe": (None, json.dumps(updated_recipe_data), "application/json")}, headers=headers)
 
     if (response_update.status_code != 200
         or response_update.json()["name"] != "Glass of Cold Water"
