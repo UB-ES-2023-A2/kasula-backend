@@ -3,7 +3,9 @@ from pydantic_settings import BaseSettings
 from pydantic import validator
 from dotenv import load_dotenv
 
+# Carregar variables d'entorn
 load_dotenv('app/config/.env')
+
 
 class CommonSettings(BaseSettings):
     APP_NAME: str = "KASULA"
