@@ -11,14 +11,9 @@ env:
 on: [push]
 
 jobs:
-  job_id:
+  deploy:
 
     runs-on: ubuntu-latest
-
-    # Add "id-token" with the intended permissions.
-    permissions:
-      contents: 'read'
-      id-token: 'write'
 
     steps:
 
@@ -26,11 +21,6 @@ jobs:
       uses: 'google-github-actions/auth@v0.4.1'
       with:
         credentials_json: ${{ secrets.CREDENTIALS_JSON }}
-    # - id: 'auth'
-    #   uses: 'google-github-actions/auth@v1'
-    #   with:
-    #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-    #     service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
@@ -48,22 +38,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # - name: Create file
-    #   run: cat $GOOGLE_APPLICATION_CREDENTIALS | base64
-    
-    # - name: Putting data in file
-    #   run: echo $DATA > $GOOGLE_APPLICATION_CREDENTIALS
-
-    # - id: 'auth'
-    #   name: 'Authenticate to Google Cloud'
-    #   uses: 'google-github-actions/auth@v1'
-    #   with:
-    #     workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-    #     service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
-
     - name: 'Deploy using gcloud CLI'
       run: |
         gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA
         gcloud run deploy kasula-v7 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,\
           DB_NAME=DB_NAME:latest,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
           EMAIL_PASS=EMAIL_PASS:latest" --region=europe-west1
+          
