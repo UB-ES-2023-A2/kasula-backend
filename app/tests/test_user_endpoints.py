@@ -166,7 +166,7 @@ def test_update_user(client):
     }
 
     # Test updating the created user
-    response = client.put(f"/user/{user_id}", json=update_data, headers=headers)
+    response = client.put(f"/user/{user_id}", files={"user": (None, json.dumps(update_data), "application/json")}, headers=headers)
 
     if (response.status_code != 200 or 
         response.json()["username"] != "updated_testuser"):
