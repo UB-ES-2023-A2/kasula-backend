@@ -1,51 +1,51 @@
-name: Deploy to Cloud Run 2
+# name: Deploy to Cloud Run 2
     
-on: [push]
+# on: [push]
 
-env:
-  # Setting an environment variable with the value of a configuration variable
-  env_var: ${{ vars.ENV_CONTEXT_VAR }}
+# env:
+#   # Setting an environment variable with the value of a configuration variable
+#   env_var: ${{ vars.ENV_CONTEXT_VAR }}
 
-jobs:
-  job_id:
+# jobs:
+#   job_id:
 
-    runs-on: ubuntu-latest
+#     runs-on: ubuntu-latest
 
-    # Add "id-token" with the intended permissions.
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+#     # Add "id-token" with the intended permissions.
+#     permissions:
+#       contents: 'read'
+#       id-token: 'write'
 
-    steps:
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v1'
-      with:
-        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
+#     steps:
+#     - id: 'auth'
+#       uses: 'google-github-actions/auth@v1'
+#       with:
+#         workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+#         service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v1'
-      with:
-        version: '>= 363.0.0'
+#     - name: 'Set up Cloud SDK'
+#       uses: 'google-github-actions/setup-gcloud@v1'
+#       with:
+#         version: '>= 363.0.0'
 
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
+#     - name: 'Use gcloud CLI'
+#       run: 'gcloud info'
 
-    - name: Use variables
-      run: |
-        echo "repository variable : $REPOSITORY_VAR"
-        echo "tag name: $TAG_NAME"
-        echo "organization variable : $ORGANIZATION_VAR"
-        echo "overridden variable : $OVERRIDE_VAR"
-        echo "variable from shell environment : $env_var"      
+#     - name: Use variables
+#       run: |
+#         echo "repository variable : $REPOSITORY_VAR"
+#         echo "tag name: $TAG_NAME"
+#         echo "organization variable : $ORGANIZATION_VAR"
+#         echo "overridden variable : $OVERRIDE_VAR"
+#         echo "variable from shell environment : $env_var"      
     
-    # - name: 'User variable'
-    #   run: |
-    #     echo "Hello %TAG_NAME%! a ${{env.TAG_NAME}}"
+#     # - name: 'User variable'
+#     #   run: |
+#     #     echo "Hello %TAG_NAME%! a ${{env.TAG_NAME}}"
     
     
-    # - name: 'Deploy using gcloud CLI'
-    #   run: |
-    #     gcloud builds submit --tag=gcr.io/kasula/build$TAG_NAME
-    #     gcloud run deploy kasula-v7 --image gcr.io/kasula/build$TAG_NAME --update-secrets="DB_URL=DB_URL:latest,DB_NAME=DB_NAME:latest,\
-    #       SECRET_KEY=SECRET_KEY:latest,EMAIL_PASS=EMAIL_PASS:latest,EMAIL_USER=EMAIL_USER:latest"
+#     # - name: 'Deploy using gcloud CLI'
+#     #   run: |
+#     #     gcloud builds submit --tag=gcr.io/kasula/build$TAG_NAME
+#     #     gcloud run deploy kasula-v7 --image gcr.io/kasula/build$TAG_NAME --update-secrets="DB_URL=DB_URL:latest,DB_NAME=DB_NAME:latest,\
+#     #       SECRET_KEY=SECRET_KEY:latest,EMAIL_PASS=EMAIL_PASS:latest,EMAIL_USER=EMAIL_USER:latest"
