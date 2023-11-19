@@ -1,4 +1,13 @@
 name: Deploy to Cloud Run 2
+
+env:
+  DB_URL: ${{secrets.DB_URL}}
+  SECRET_KEY: ${{secrets.SECRET_KEY}}
+  DB_NAME: ${{secrets.DB_NAME}}
+  DB_TEST: ${{secrets.DB_TEST}}
+  EMAIL_USER: ${{secrets.EMAIL_USER}}
+  EMAIL_PASS: ${{secrets.EMAIL_PASS}}
+  GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
     
 on: [push]
 
@@ -38,6 +47,14 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v4
+
+    - name: Create file
+      run: cat $GOOGLE_APPLICATION_CREDENTIALS | base64
+    
+    - name: Putting data
+      env:
+        DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: echo $DATA > $GOOGLE_APPLICATION_CREDENTIALS
 
     - name: 'Deploy using gcloud CLI'
       run: |
