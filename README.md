@@ -20,7 +20,7 @@ Create a .env file in the config folder following the .env.example file. You wil
 ## Usage
 ```
 ./env/Scripts/activate
-uvicorn app.app_definition:app # Alternative: python app/main.py
+uvicorn app.main:app # Alternative: python app/main.py
 ```
 
 ## Run tests

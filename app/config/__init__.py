@@ -4,7 +4,8 @@ from pydantic import validator
 from dotenv import load_dotenv
 
 # Carregar variables d'entorn
-load_dotenv('app/config/.env')
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 
 class CommonSettings(BaseSettings):
