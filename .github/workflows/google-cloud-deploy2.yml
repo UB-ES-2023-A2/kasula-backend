@@ -8,6 +8,7 @@ env:
   EMAIL_USER: ${{secrets.EMAIL_USER}}
   EMAIL_PASS: ${{secrets.EMAIL_PASS}}
   GOOGLE_APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+  DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
     
 on: [push]
 
@@ -41,16 +42,21 @@ jobs:
         echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
         echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    # - name: Checkout repository
+    #   uses: actions/checkout@v4
 
-    - name: Create file
-      run: cat $GOOGLE_APPLICATION_CREDENTIALS | base64
+    # - name: Create file
+    #   run: cat $GOOGLE_APPLICATION_CREDENTIALS | base64
     
-    - name: Putting data
-      env:
-        DATA: ${{ secrets.GOOGLE_SERVICES_JSON }}
-      run: echo $DATA > $GOOGLE_APPLICATION_CREDENTIALS
+    # - name: Putting data in file
+    #   run: echo $DATA > $GOOGLE_APPLICATION_CREDENTIALS
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+        service_account: 'my-service-account@my-project.iam.gserviceaccount.com'
 
     - name: 'Deploy using gcloud CLI'
       run: |
