@@ -47,8 +47,8 @@ jobs:
         echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
         echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
 
-    # - name: Checkout repository
-    #   uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     # - name: Create file
     #   run: cat $GOOGLE_APPLICATION_CREDENTIALS | base64
