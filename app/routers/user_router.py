@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 from typing import List, Optional
 import json
+import uuid
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -60,6 +61,18 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
 
     if isinstance(created_user["_id"], ObjectId):
         created_user["_id"] = str(created_user["_id"])
+
+    collection = {
+        "_id": str(uuid.uuid4()),  # Explicitly set the _id field with a UUID
+        "name": "Favorites",
+        "description": "Here you can see your favorite recipes!",
+        "recipe_ids": [],
+        "user_id": created_user["_id"],
+        "username": created_user["username"],
+        "favorite": True
+    }
+
+    await db["collections"].insert_one(jsonable_encoder(collection))
 
     # Send welcome email after successful user creation
     send_welcome_email(user_email)
