@@ -13,6 +13,7 @@ class CollectionModel(BaseModel):
     username: Optional[str] = Field(None)  # Username of the user who owns the collection
     recipe_ids: List[str] = Field(default_factory=list)  # List of recipe IDs
     creation_date: datetime = Field(default_factory=datetime.utcnow)
+    favorite: Optional[bool] = Field(None, description="Whether the collection is a favorite collection or not")
 
 
 class UpdateCollectionModel(BaseModel):
