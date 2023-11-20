@@ -4,11 +4,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
 from email.mime.text import MIMEText
-from fastapi import Form, UploadFile, File
+from fastapi import Form, UploadFile, File, HTTPException, Depends
 from google.cloud import storage
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import json
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -24,7 +25,6 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
-
 
 def get_database(request: Request):
     return request.app.mongodb
@@ -98,15 +98,6 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
 
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
-
-from fastapi import Form, UploadFile, File, HTTPException
-from typing import List
-import json
-
-from fastapi import Form, UploadFile, File, HTTPException, Depends
-from typing import List, Optional
-import json
-
 @router.put("/{id}", response_description="Update a user")
 async def update_user(
     id: str, 
@@ -154,6 +145,9 @@ async def update_user(
                 {"reviews.user_id": id},
                 {"$set": {"reviews.$[elem].username": user_update["username"]}},
                 array_filters=[{"elem.user_id": id}]
+            )
+            await db["collections"].update_many(
+                {"user_id": id}, {"$set": {"username": user_update["username"]}}
             )
 
         if update_result.modified_count == 1:
