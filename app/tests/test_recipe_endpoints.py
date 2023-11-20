@@ -127,7 +127,6 @@ def test_show_recipe():
         response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
         access_token = response_token.json()["access_token"]
 
-        print("RESPONSE USER SHOW RECIPE: {}".format(response_user.json()))
         user_id = response_user.json()["_id"]
 
         headers = {
