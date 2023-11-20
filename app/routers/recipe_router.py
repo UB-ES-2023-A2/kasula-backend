@@ -8,7 +8,7 @@ from datetime import datetime
 from google.cloud import storage
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -65,13 +65,15 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
 
 
 @router.get("/", response_description="List all recipes")
-async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
-    user = await db["users"].find_one({"_id": current_user["user_id"]})
-    
-    username = user["username"]
+async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    username = current_user["username"] if current_user else None
 
     recipes = []
-    for doc in await db["recipes"].find({"$or": [{"is_public": True}, {"username": username}]}).to_list(length=100):
+    query = {"$or": [{"is_public": True}]}
+    if username:
+        query["$or"].append({"username": username})
+
+    async for doc in db["recipes"].find(query).limit(100):
         recipes.append(doc)
 
     if not recipes:
@@ -83,9 +85,14 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
     recipe = await db["recipes"].find_one({"_id": id})
 
+    user_id = current_user["user_id"] if current_user else None
+
     if recipe is not None:
-        if recipe.get("is_public", False) or recipe.get("user_id") == current_user["user_id"]:
+        if recipe.get("is_public", False):
             return recipe
+        elif user_id:
+            if recipe.get("user_id") == user_id:
+                return recipe
         else:
             raise HTTPException(status_code=403, detail=f"The given recipe is not public")
     else:
@@ -179,12 +186,20 @@ async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depen
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user = await db["users"].find_one({"_id": current_user["user_id"]})
+    user_id = current_user["user_id"] if current_user else None
+
+    if user_id:
+        user = await db["users"].find_one({"_id": user_id})
+    else:
+        user = None
 
     recipes = []
-    for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=100):
-        if doc.get("public") or (doc.get("username") == user["username"]):
+    for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=1000):
+        if doc.get("is_public"):
             recipes.append(doc)
+        elif user:
+            if doc.get("username") == user["username"]:
+                recipes.append(doc)
     
     if not recipes:
         return "Nothing to show"
