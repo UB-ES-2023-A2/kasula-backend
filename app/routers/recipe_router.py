@@ -68,10 +68,15 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
 async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
     username = current_user["username"] if current_user else None
 
+    if username:
+        # Retrieve the current user from the database
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     recipes = []
     query = {"$or": [{"is_public": True}]}
     if username:
         query["$or"].append({"username": username})
+        query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
 
     async for doc in db["recipes"].find(query).limit(100):
         recipes.append(doc)
@@ -82,10 +87,14 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
     return recipes
 
 @router.get("/{id}", response_description="Get a single recipe given its id")
-async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
+async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
     recipe = await db["recipes"].find_one({"_id": id})
 
     user_id = current_user["user_id"] if current_user else None
+
+    if user_id:
+        # Retrieve the current user from the database
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
 
     if recipe is not None:
         if recipe.get("is_public", False):
@@ -93,8 +102,9 @@ async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), c
         elif user_id:
             if recipe.get("user_id") == user_id:
                 return recipe
-        else:
-            raise HTTPException(status_code=403, detail=f"The given recipe is not public")
+            elif recipe.get("username") in user.get("following", []):
+                return recipe
+        raise HTTPException(status_code=403, detail=f"The given recipe is not public")
     else:
         raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
@@ -133,7 +143,8 @@ async def update_recipe(
             image_urls.append(image_url)
 
         if image_urls:
-            recipe_update['images'] = image_urls  # Replace or append to the existing images list as required
+            existing_images = existing_recipe.get('images', [])
+            recipe_update['images'] = existing_images + image_urls
 
     # Update logic
     if recipe_update:

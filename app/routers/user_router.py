@@ -4,11 +4,13 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
 from email.mime.text import MIMEText
-from fastapi import Form, UploadFile, File
+from fastapi import Form, UploadFile, File, HTTPException, Depends
 from google.cloud import storage
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import json
+import uuid
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -24,7 +26,6 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
-
 
 def get_database(request: Request):
     return request.app.mongodb
@@ -61,6 +62,18 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
     if isinstance(created_user["_id"], ObjectId):
         created_user["_id"] = str(created_user["_id"])
 
+    collection = {
+        "_id": str(uuid.uuid4()),  # Explicitly set the _id field with a UUID
+        "name": "Favorites",
+        "description": "Here you can see your favorite recipes!",
+        "recipe_ids": [],
+        "user_id": created_user["_id"],
+        "username": created_user["username"],
+        "favorite": True
+    }
+
+    await db["collections"].insert_one(jsonable_encoder(collection))
+
     # Send welcome email after successful user creation
     send_welcome_email(user_email)
     
@@ -80,7 +93,8 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
 
 @router.get("/me", response_description="Get current user")
 async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
-    user = await db["users"].find_one({"username": current_user["username"]})
+    print(current_user)
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string
         user.pop("password", None)  # Remove the password field
@@ -98,15 +112,6 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
 
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
-
-from fastapi import Form, UploadFile, File, HTTPException
-from typing import List
-import json
-
-from fastapi import Form, UploadFile, File, HTTPException, Depends
-from typing import List, Optional
-import json
-
 @router.put("/{id}", response_description="Update a user")
 async def update_user(
     id: str, 
@@ -116,6 +121,9 @@ async def update_user(
     current_user: str = Depends(get_current_user)
 ):
     user_update = {}
+
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
 
     # Only parse user data if it's provided
     if user:
@@ -144,8 +152,8 @@ async def update_user(
             {"_id": id}, {"$set": user_update}
         )
 
-        # Update the username in all recipes created by the user
         if 'username' in user_update:
+            # Update the username in all recipes created by the user
             await db["recipes"].update_many(
                 {"user_id": id}, {"$set": {"username": user_update["username"]}}
             )
@@ -154,6 +162,19 @@ async def update_user(
                 {"reviews.user_id": id},
                 {"$set": {"reviews.$[elem].username": user_update["username"]}},
                 array_filters=[{"elem.user_id": id}]
+            )
+            await db["collections"].update_many(
+                {"user_id": id}, {"$set": {"username": user_update["username"]}}
+            )
+            # Update the username in all followers of the current user
+            await db["users"].update_many(
+                {"following": actual_user["username"]},
+                {"$set": {"following.$": user_update["username"]}}
+            )
+            # Update the username in all following of the current user
+            await db["users"].update_many(
+                {"followers": actual_user["username"]},
+                {"$set": {"followers.$": user_update["username"]}}
             )
 
         if update_result.modified_count == 1:
@@ -293,6 +314,9 @@ async def update_password(email: str, verification_code: int, user: UpdateUserMo
 
 @router.post("/follow/{username}", response_description="Follow a user by username")
 async def follow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
 
@@ -302,25 +326,28 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
     target_username = target_user["username"]
 
     # Prevent self-follow
-    if target_username == current_user["username"]:
+    if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"username": current_user["username"]},
+        {"username": actual_user["username"]},
         {"$addToSet": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
         {"username": target_username},
-        {"$addToSet": {"followers": current_user["username"]}}
+        {"$addToSet": {"followers": actual_user["username"]}}
     )
 
     return {"message": f"Now following user {username}"}
 
 @router.post("/unfollow/{username}", response_description="Unfollow a user by username")
 async def unfollow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
     if not target_user:
@@ -329,19 +356,19 @@ async def unfollow_user(username: str, current_user: str = Depends(get_current_u
     target_username = target_user["username"]
 
     # Prevent self-unfollow (which doesn't make sense but just in case)
-    if target_username == current_user["username"]:
+    if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"username": current_user["username"]},
+        {"username": actual_user["username"]},
         {"$pull": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
         {"username": target_username},
-        {"$pull": {"followers": current_user["username"]}}
+        {"$pull": {"followers": actual_user["username"]}}
     )
 
     return {"message": f"Unfollowed user {username}"}
