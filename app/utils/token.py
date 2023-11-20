@@ -41,7 +41,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Optional[Dict[str, 
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("user_id")
         username: str = payload.get("username")
-        if user_id is None or username is None:
+        if user_id is None:
             raise credentials_exception
         return {"user_id": user_id, "username": username}
     except (InvalidTokenError, jwt.ExpiredSignatureError):
