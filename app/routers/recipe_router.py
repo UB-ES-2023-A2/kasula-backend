@@ -8,7 +8,7 @@ from datetime import datetime
 from google.cloud import storage
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -65,13 +65,15 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
 
 
 @router.get("/", response_description="List all recipes")
-async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
-    user = await db["users"].find_one({"_id": current_user["user_id"]})
-    
-    username = user["username"]
+async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    username = current_user["username"] if current_user else None
 
     recipes = []
-    for doc in await db["recipes"].find({"$or": [{"is_public": True}, {"username": username}]}).to_list(length=100):
+    query = {"$or": [{"is_public": True}]}
+    if username:
+        query["$or"].append({"username": username})
+
+    async for doc in db["recipes"].find(query).limit(100):
         recipes.append(doc)
 
     if not recipes:
