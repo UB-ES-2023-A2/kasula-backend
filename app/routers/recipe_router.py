@@ -133,7 +133,8 @@ async def update_recipe(
             image_urls.append(image_url)
 
         if image_urls:
-            recipe_update['images'] = image_urls  # Replace or append to the existing images list as required
+            existing_images = existing_recipe.get('images', [])
+            recipe_update['images'] = existing_images + image_urls
 
     # Update logic
     if recipe_update:
