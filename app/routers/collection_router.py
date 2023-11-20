@@ -1,6 +1,7 @@
 from .common import *
 from app.models.collection_model import CollectionModel, UpdateCollectionModel
 from app.models.user_model import UserModel
+from typing import Optional, Dict
 
 router = APIRouter()
 
@@ -60,15 +61,43 @@ async def remove_recipe_from_collection(collection_id: str, recipe_id: str, curr
         raise HTTPException(status_code=404, detail="Collection not found or access denied")
 
 @router.get("/user/{username}", response_description="List all collections of a user")
-async def list_collections_by_user(username: str, db: AsyncIOMotorClient = Depends(get_database)):
-    collections = await db["collections"].find({"username": username}).to_list(None)
-    return collections
+async def list_collections_by_user(username: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    # Current user
+    actual_user = current_user["username"] if current_user else None
+    
+    # Retrieve the user from the database
+    user = await db["users"].find_one({"username": username})
 
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.get("is_private", False) or actual_user == username or (actual_user and actual_user in user.get("followers", [])):
+        collections = await db["collections"].find({"username": username}).to_list(None)
+        return collections
+    else:
+        raise HTTPException(status_code=403, detail="User is not public")
+    
 @router.get("/{collection_id}/recipes", response_description="List all recipes in a collection")
-async def list_recipes_in_collection(collection_id: str, db: AsyncIOMotorClient = Depends(get_database)):
+async def list_recipes_in_collection(collection_id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    # Current user
+    actual_user = current_user["username"] if current_user else None
+
     collection = await db["collections"].find_one({"_id": collection_id})
+
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    recipes = await db["recipes"].find({"_id": {"$in": collection["recipe_ids"]}}).to_list(None)
-    return recipes
+    # Get the user that owns the collection
+    user = await db["users"].find_one({"username": collection["username"]})
+
+    # Check if the user creator of the collection is public
+    if not user.get("is_private", False):
+        recipes = await db["recipes"].find({"_id": {"$in": collection["recipe_ids"]}}).to_list(None)
+        return recipes
+    else:
+        # Check if the current user is following the user
+        if actual_user and actual_user in user.get("followers", []):
+            recipes = await db["recipes"].find({"_id": {"$in": collection["recipe_ids"]}}).to_list(None)
+            return recipes
+        else:
+            raise HTTPException(status_code=403, detail="Access denied")
