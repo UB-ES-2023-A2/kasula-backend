@@ -8,7 +8,7 @@ from datetime import datetime
 from google.cloud import storage
 import time
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -23,9 +23,25 @@ def get_database(request: Request):
 
 @router.post("/", response_description="Add new recipe")
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), files: List[UploadFile] = File(None), current_user: UserModel = Depends(get_current_user)):
+    # Retrieve the current user from the database
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    if user is None:
+        raise HTTPException(status_code=404, detail=f"User not found")
+
+    # Get the value of the "is_private" key for the current user
+    is_private = user.get("is_private", False)
+
     recipe_dict = json.loads(recipe)  # Deserialize the JSON string into a dictionary
     recipe_model = RecipeModel(**recipe_dict)
-    recipe_model.username = current_user["username"]
+    recipe_model.username = user["username"]
+
+    # Set user_id to the current user's ID
+    recipe_model.user_id = user["_id"]
+
+    recipe_model.is_public = not is_private
+
+    recipe_model.average_rating = 0.0
 
     if not files:
         recipe_model.images = []
@@ -49,41 +65,74 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
 
 
 @router.get("/", response_description="List all recipes")
-async def list_recipes(db: AsyncIOMotorClient = Depends(get_database)):
+async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+    
+    username = user["username"]
+
     recipes = []
-    for doc in await db["recipes"].find().to_list(length=100):
+    for doc in await db["recipes"].find({"$or": [{"is_public": True}, {"username": username}]}).to_list(length=100):
         recipes.append(doc)
+
+    if not recipes:
+        return "There are no recipes to show at the moment"
+
     return recipes
 
 @router.get("/{id}", response_description="Get a single recipe given its id")
-async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database)):
-    if (recipe := await db["recipes"].find_one({"_id": id})) is not None:
-        return recipe
+async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
+    recipe = await db["recipes"].find_one({"_id": id})
 
-    raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+    if recipe is not None:
+        if recipe.get("is_public", False) or recipe.get("user_id") == current_user["user_id"]:
+            return recipe
+        else:
+            raise HTTPException(status_code=403, detail=f"The given recipe is not public")
+    else:
+        raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
 
 @router.put("/{id}", response_description="Update a recipe")
-async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), recipe: UpdateRecipeModel = Body(...), current_user: UserModel = Depends(get_current_user)):
-    # Retrieve the existing recipe from the database.
+async def update_recipe(
+    id: str, 
+    db: AsyncIOMotorClient = Depends(get_database), 
+    recipe: Optional[str] = Form(None),  # Make the recipe data optional
+    files: List[UploadFile] = File(None),  # Accept multiple files
+    current_user: UserModel = Depends(get_current_user)
+):
+    # Retrieve the existing recipe
     existing_recipe = await db["recipes"].find_one({"_id": id})
-    
-    # If no such recipe exists, return a 404 error.
     if existing_recipe is None:
         raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
-    
-    # Check if the user trying to update the recipe is the one who created it.
+
+    # Authorization check
     if existing_recipe.get("username") != current_user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this recipe")
 
-    # Convert UpdateRecipeModel to a dictionary and update fields if not None
-    recipe_dict = {k: v for k, v in recipe.dict().items() if v is not None}
+    recipe_update = {}
 
-    # Set updated_at to current datetime
-    recipe_dict['updated_at'] = datetime.utcnow()
+    # Parse recipe data if provided
+    if recipe:
+        recipe_data = json.loads(recipe)
+        recipe_model = UpdateRecipeModel(**recipe_data)
+        recipe_update = {k: v for k, v in recipe_model.dict().items() if v is not None}
 
-    if len(recipe_dict) >= 1:
+    # Image processing and uploading
+    if files:
+        image_urls = []
+        for file in files:
+            fullname = await upload_image(file, file.filename)
+            image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+            image_urls.append(image_url)
+
+        if image_urls:
+            recipe_update['images'] = image_urls  # Replace or append to the existing images list as required
+
+    # Update logic
+    if recipe_update:
+        recipe_update['updated_at'] = datetime.utcnow()
         update_result = await db["recipes"].update_one(
-            {"_id": id}, {"$set": recipe_dict}
+            {"_id": id}, {"$set": recipe_update}
         )
 
         if update_result.modified_count == 1:
@@ -92,6 +141,7 @@ async def update_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
             ) is not None:
                 return updated_recipe
 
+    # Return existing recipe if no updates were made
     if (
         existing_recipe := await db["recipes"].find_one({"_id": id})
     ) is not None:
@@ -104,12 +154,14 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     # Retrieve the existing recipe from the database.
     existing_recipe = await db["recipes"].find_one({"_id": id})
 
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # If no such recipe exists, return a 404 error.
     if existing_recipe is None:
         raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
     # Check if the user trying to delete the recipe is the one who created it.
-    if existing_recipe.get("username") != current_user["username"]:
+    if existing_recipe.get("username") != user["username"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this recipe")
 
     # Delete the recipe from the database.
@@ -121,15 +173,22 @@ async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database),
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
 
 @router.get("/user/{username}", response_description="List all recipes by a specific username")
-async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depends(get_database)):
+async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     recipes = []
     for doc in await db["recipes"].find({"username": target_user["username"]}).to_list(length=100):
-        recipes.append(doc)
+        if doc.get("public") or (doc.get("username") == user["username"]):
+            recipes.append(doc)
+    
+    if not recipes:
+        return "Nothing to show"
+    
     return recipes
 
 async def upload_image(file : UploadFile, name):
