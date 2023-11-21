@@ -1,6 +1,6 @@
 import uuid
 from fastapi.testclient import TestClient
-from app.main import app
+from app.app_definition import app
 
 # To test these endpoints, we will focus on the following testing parameters:
 

@@ -9,8 +9,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import settings
 from app.routers import user_router, recipe_router, review_router
 
-import uvicorn
-
 app = FastAPI()
 
 # Allow all origins for development purposes, to be able to use
