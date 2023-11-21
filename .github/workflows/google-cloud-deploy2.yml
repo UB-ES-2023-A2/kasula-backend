@@ -34,5 +34,5 @@ jobs:
       run: |
         gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA --region=europe-west1
         gcloud run deploy kasula-v10 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,\
-          DB_NAME=DB_NAME:latest,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
+          DB_NAME=DB_NAME:2,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
           EMAIL_PASS=EMAIL_PASS:latest,HOST=HOST:latest" --region=europe-west1
