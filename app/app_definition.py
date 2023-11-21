@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-from app.routers import user_router, recipe_router, review_router
+from app.routers import user_router, recipe_router, review_router, collection_router
 
 app = FastAPI()
 
@@ -30,16 +30,14 @@ async def startup_db_client():
     app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
     app.mongodb = app.mongodb_client[settings.DB_NAME]
 
-    # print("Startup, connected to DB: " + settings.DB_URL + settings.DB_NAME)
-
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    # print("Shutdown, closing connection to DB: " + settings.DB_URL + settings.DB_NAME)
     app.mongodb_client.close()
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")
 app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
 app.include_router(review_router.router, tags=["reviews"], prefix="/review")
+app.include_router(collection_router.router, tags=["collections"], prefix="/collection")
 
 @app.get("/")
 async def root():

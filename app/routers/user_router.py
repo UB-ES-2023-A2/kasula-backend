@@ -4,6 +4,16 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.utils.token import create_access_token
 from bson import ObjectId
 from email.mime.text import MIMEText
+from fastapi import Form, UploadFile, File, HTTPException, Depends
+from google.cloud import storage
+import time
+from pathlib import Path
+from typing import List, Optional
+import json
+import uuid
+
+project_name = 'kasula'
+bucket_name = 'bucket-kasula_images'
 
 import random
 import smtplib
@@ -16,7 +26,6 @@ warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
-
 
 def get_database(request: Request):
     return request.app.mongodb
@@ -53,6 +62,18 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
     if isinstance(created_user["_id"], ObjectId):
         created_user["_id"] = str(created_user["_id"])
 
+    collection = {
+        "_id": str(uuid.uuid4()),  # Explicitly set the _id field with a UUID
+        "name": "Favorites",
+        "description": "Here you can see your favorite recipes!",
+        "recipe_ids": [],
+        "user_id": created_user["_id"],
+        "username": created_user["username"],
+        "favorite": True
+    }
+
+    await db["collections"].insert_one(jsonable_encoder(collection))
+
     # Send welcome email after successful user creation
     send_welcome_email(user_email)
     
@@ -65,15 +86,18 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
     for doc in await db["users"].find().to_list(length=100):
         if isinstance(doc["_id"], ObjectId):
             doc["_id"] = str(doc["_id"])
+        doc.pop("password", None)  # Remove the password field
         users.append(doc)
     return users
 
 
 @router.get("/me", response_description="Get current user")
 async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
-    user = await db["users"].find_one({"username": current_user["username"]})
+    print(current_user)
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string
+        user.pop("password", None)  # Remove the password field
         return user
     raise HTTPException(status_code=404, detail="User not found")
 
@@ -83,40 +107,86 @@ async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
     if (user := await db["users"].find_one({"_id": id})) is not None:
         # Convert ObjectId back to string for the response
         user["_id"] = str(user["_id"])
+        user.pop("password", None)  # Remove the password field
         return user
 
     raise HTTPException(status_code=404, detail=f"User {id} not found")
 
-
 @router.put("/{id}", response_description="Update a user")
-async def update_user(id: str, db: AsyncIOMotorClient = Depends(get_database), user: UpdateUserModel = Body(...), current_user: str = Depends(get_current_user)):
-    # Rehash the password if it's being updated
-    if user.password:
-        user.password = hash_password(user.password)
-    user = {k: v for k, v in user.model_dump().items() if v is not None}
+async def update_user(
+    id: str, 
+    db: AsyncIOMotorClient = Depends(get_database), 
+    user: Optional[str] = Form(None),  # Make the user data optional
+    file: UploadFile | None = None,  # File upload
+    current_user: str = Depends(get_current_user)
+):
+    user_update = {}
 
-    # Compare the current_user id with the value of the id of the user we want to update
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    # Only parse user data if it's provided
+    if user:
+        user_data = json.loads(user)
+        user_model = UpdateUserModel(**user_data)
+
+        if user_model.password:
+            user_model.password = hash_password(user_model.password)
+
+        user_update = {k: v for k, v in user_model.dict().items() if v is not None}
+
     if current_user["user_id"] != id:
         raise HTTPException(
             status_code=403, detail="Forbidden. You don't have permission to update this user.")
 
-    if len(user) >= 1:
+    # Image processing and uploading
+    if file:
+        fullname = await upload_image(file, file.filename)
+        image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
+
+        user_update['profile_picture'] = image_url
+
+    # Ensure there's something to update
+    if user_update:
         update_result = await db["users"].update_one(
-            {"_id": id}, {"$set": user}
+            {"_id": id}, {"$set": user_update}
         )
+
+        if 'username' in user_update:
+            # Update the username in all recipes created by the user
+            await db["recipes"].update_many(
+                {"user_id": id}, {"$set": {"username": user_update["username"]}}
+            )
+            # Update the username in all reviews within the recipes
+            await db["recipes"].update_many(
+                {"reviews.user_id": id},
+                {"$set": {"reviews.$[elem].username": user_update["username"]}},
+                array_filters=[{"elem.user_id": id}]
+            )
+            await db["collections"].update_many(
+                {"user_id": id}, {"$set": {"username": user_update["username"]}}
+            )
+            # Update the username in all followers of the current user
+            await db["users"].update_many(
+                {"following": actual_user["username"]},
+                {"$set": {"following.$": user_update["username"]}}
+            )
+            # Update the username in all following of the current user
+            await db["users"].update_many(
+                {"followers": actual_user["username"]},
+                {"$set": {"followers.$": user_update["username"]}}
+            )
 
         if update_result.modified_count == 1:
             if (
                 updated_user := await db["users"].find_one({"_id": id})
             ) is not None:
-                # Convert _id to string
                 updated_user["_id"] = str(updated_user["_id"])
                 return updated_user
 
     if (
         existing_user := await db["users"].find_one({"_id": id})
     ) is not None:
-        # Convert _id to string
         existing_user["_id"] = str(existing_user["_id"])
         return existing_user
 
@@ -244,6 +314,9 @@ async def update_password(email: str, verification_code: int, user: UpdateUserMo
 
 @router.post("/follow/{username}", response_description="Follow a user by username")
 async def follow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
 
@@ -253,25 +326,28 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
     target_username = target_user["username"]
 
     # Prevent self-follow
-    if target_username == current_user["username"]:
+    if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"username": current_user["username"]},
+        {"username": actual_user["username"]},
         {"$addToSet": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
         {"username": target_username},
-        {"$addToSet": {"followers": current_user["username"]}}
+        {"$addToSet": {"followers": actual_user["username"]}}
     )
 
     return {"message": f"Now following user {username}"}
 
 @router.post("/unfollow/{username}", response_description="Unfollow a user by username")
 async def unfollow_user(username: str, current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    # Retrieve the current user from the database
+    actual_user = await db["users"].find_one({"_id": current_user["user_id"]})
+
     # Find the target user by username
     target_user = await db["users"].find_one({"username": username})
     if not target_user:
@@ -280,19 +356,19 @@ async def unfollow_user(username: str, current_user: str = Depends(get_current_u
     target_username = target_user["username"]
 
     # Prevent self-unfollow (which doesn't make sense but just in case)
-    if target_username == current_user["username"]:
+    if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
 
     # Update the current user's following list
     await db["users"].update_one(
-        {"username": current_user["username"]},
+        {"username": actual_user["username"]},
         {"$pull": {"following": target_username}}
     )
 
     # Update the target user's followers list
     await db["users"].update_one(
         {"username": target_username},
-        {"$pull": {"followers": current_user["username"]}}
+        {"$pull": {"followers": actual_user["username"]}}
     )
 
     return {"message": f"Unfollowed user {username}"}
@@ -337,3 +413,21 @@ def send_welcome_email(email: str):
     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
         server.login(sender_email, password)
         server.send_message(message)
+
+async def upload_image(file : UploadFile, name):
+    storage_client = storage.Client(project=project_name)
+    bucket = storage_client.get_bucket(bucket_name)
+    point = name.rindex('.')
+    fullname = 'users/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    blob = bucket.blob(fullname)
+    
+    data = await file.read()
+    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
+    UPLOAD_DIR = Path('')
+    save_to = UPLOAD_DIR / file.filename
+    with open(save_to, "wb") as f:
+        f.write(data)
+    blob.upload_from_filename(save_to)
+    os.remove(save_to)
+    
+    return fullname
