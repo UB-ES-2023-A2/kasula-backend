@@ -93,7 +93,6 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
 
 @router.get("/me", response_description="Get current user")
 async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
-    print(current_user)
     user = await db["users"].find_one({"_id": current_user["user_id"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string

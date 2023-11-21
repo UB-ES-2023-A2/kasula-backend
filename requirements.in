@@ -26,3 +26,7 @@ pytest
 # Google Cloud Storage
 google-cloud-storage
 google-cloud-secret-manager
+
+# Unit Tests
+mongomock
+```

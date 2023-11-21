@@ -1,6 +1,7 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.testclient import TestClient
+from mongomock import MongoClient as MockMongoClient
 import sys
 import os
 
@@ -13,21 +14,13 @@ from app_definition import app
 from tests import test_user_endpoints, test_recipe_endpoints
 from tests.test_user_endpoints import TestAssertionError
 
-async def clear_collections():
-    await app.mongodb["users"].drop()
-    await app.mongodb["recipes"].drop()
-
-
 # Connect to the Database and clear the collections
 def initialize():
-    app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
+    print("Preparing mock database")
+    app.mongodb_client = MockMongoClient()
     app.mongodb = app.mongodb_client[settings.DB_TEST]
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(clear_collections())
-    app.mongodb_client.close()
-
-    print("\nConnected to the test database and cleared collections.\n")
+    print("\nUsing mock database for tests.\n")
 
     return app
 
