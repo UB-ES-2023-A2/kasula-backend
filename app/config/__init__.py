@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+# Sobreescriure amb possibles variables locals
+dotenv_path_local = os.path.join(os.path.dirname(__file__), '.env.local')
+load_dotenv(dotenv_path_local, override=True)
+
 
 class CommonSettings(BaseSettings):
     APP_NAME: str = "KASULA"
