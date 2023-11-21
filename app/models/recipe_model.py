@@ -14,6 +14,7 @@ class RecipeModel(BaseModel):
     instructions: List[InstructionModel] = Field(...)
     cooking_time: int = Field(default=0)
     difficulty: int = Field(default=0)
+    main_image: str = Field(None)
     images: List[str] = Field(default_factory=list)
     energy: Optional[int] = Field(None)
     username: Optional[str] = Field(None)

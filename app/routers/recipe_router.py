@@ -44,13 +44,17 @@ async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: 
     recipe_model.average_rating = 0.0
 
     if not files:
+        recipe_model.main_image = None
         recipe_model.images = []
     else:
         image_urls = []
-        for file in files:
+        for i, file in enumerate(files):
             fullname = await upload_image(file, file.filename)
             image_url = f'https://storage.googleapis.com/bucket-kasula_images/{fullname}'
-            image_urls.append(image_url)
+            if i == 0:
+                recipe_model.main_image = image_url
+            else:
+                image_urls.append(image_url)
 
         recipe_model.images = image_urls  # Set the images field with the list of URLs
 
@@ -82,7 +86,7 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
         recipes.append(doc)
 
     if not recipes:
-        return "There are no recipes to show at the moment"
+        return []
 
     return recipes
 
@@ -213,7 +217,7 @@ async def list_recipes_by_username(username: str, db: AsyncIOMotorClient = Depen
                 recipes.append(doc)
     
     if not recipes:
-        return "Nothing to show"
+        return []
     
     return recipes
 
