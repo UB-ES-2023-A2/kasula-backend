@@ -138,3 +138,4 @@ dmypy.json
 # Secret key to upload to Google Cloud Storage
 app/config/secret
 config/secret/*
+.DS_Store
