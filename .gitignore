@@ -139,3 +139,4 @@ dmypy.json
 app/config/secret
 config/secret/*
 app/config/.env.local
+.DS_Store
