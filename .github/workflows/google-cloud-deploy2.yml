@@ -1,38 +1,38 @@
-# name: Deploy to Cloud Run 2
+name: Deploy to Cloud Run 2
 
-# on: [push]
+on: [push]
 
-# jobs:
-#   deploy:
+jobs:
+  deploy:
 
-#     runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-#     steps:
+    steps:
 
-#     - id: 'auth'
-#       uses: 'google-github-actions/auth@v0.4.1'
-#       with:
-#         credentials_json: ${{ secrets.CREDENTIALS_JSON }}
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0.4.1'
+      with:
+        credentials_json: ${{ secrets.CREDENTIALS_JSON }}
 
-#     - name: 'Set up Cloud SDK'
-#       uses: 'google-github-actions/setup-gcloud@v1'
-#       with:
-#         version: '>= 363.0.0'
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        version: '>= 363.0.0'
 
-#     - name: 'Use gcloud CLI'
-#       run: 'gcloud info'
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
 
-#     - name: Use variables
-#       run: |
-#         echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
-#         echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
+    - name: Use variables
+      run: |
+        echo "GITHUB_SHA : $GITHUB_SHA" # Commit hash
+        echo "GITHUB_REF_NAME : $GITHUB_REF_NAME" # Branca
 
-#     - name: Checkout repository
-#       uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-#     - name: 'Deploy using gcloud CLI'
-#       run: |
-#         gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA --region=europe-west1
-#         gcloud run deploy kasula-v10 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,\
-#           DB_NAME=DB_NAME:latest,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
-#           EMAIL_PASS=EMAIL_PASS:latest,HOST=HOST:latest" --region=europe-west1
+    - name: 'Deploy using gcloud CLI'
+      run: |
+        gcloud builds submit --tag=gcr.io/kasula/build$GITHUB_SHA --region=europe-west1
+        gcloud run deploy kasula-v10 --image gcr.io/kasula/build$GITHUB_SHA --update-secrets="DB_URL=DB_URL:latest,\
+          DB_NAME=DB_NAME:latest,SECRET_KEY=SECRET_KEY:latest,DB_TEST=DB_TEST:latest,EMAIL_USER=EMAIL_USER:latest,\
+          EMAIL_PASS=EMAIL_PASS:latest,HOST=HOST:latest" --region=europe-west1
