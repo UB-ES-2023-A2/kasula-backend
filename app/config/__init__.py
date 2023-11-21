@@ -3,31 +3,29 @@ from pydantic_settings import BaseSettings
 from pydantic import validator
 from dotenv import load_dotenv
 
+# Carregar variables d'entorn
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
-load_dotenv()
+# Sobreescriure amb possibles variables locals
+dotenv_path_local = os.path.join(os.path.dirname(__file__), '.env.local')
+load_dotenv(dotenv_path_local, override=True)
 
 
 class CommonSettings(BaseSettings):
     APP_NAME: str = "KASULA"
-    DEBUG_MODE: bool = bool(os.getenv("DEBUG_MODE", False))
+    DEBUG_MODE: bool = os.getenv("DEBUG_MODE", False)
 
 
 class ServerSettings(BaseSettings):
-    HOST: str = "127.0.0.1"
-    PORT: int = os.getenv("PORT", 8080)
+    HOST: str = os.getenv("HOST")
+    PORT: int = os.getenv("PORT")
 
 
 class DatabaseSettings(BaseSettings):
     DB_URL: str = os.getenv("DB_URL")
     DB_NAME: str = os.getenv("DB_NAME")
-    DB_TEST: str = os.getenv("DB_TEST")
-
-    # De moment comentat, però potser seria millor que peti si no té el DB_NAME?
-    # @validator("DB_NAME", pre=True, always=True)
-    # def set_db_name(cls, db_name, values):
-    #     if values.get("TEST_MODE"):
-    #         return os.getenv("DB_TEST")
-    #     return db_name
+    DB_TEST: str | None = os.getenv("DB_TEST")
 
 
 class Settings(CommonSettings, ServerSettings, DatabaseSettings):

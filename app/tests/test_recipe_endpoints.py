@@ -1,6 +1,5 @@
 import json
 import uuid
-from bson import ObjectId
 
 # To test these endpoints, we will focus on the following testing parameters:
 

@@ -20,22 +20,14 @@ Create a .env file in the config folder following the .env.example file. You wil
 ## Usage
 ```
 ./env/Scripts/activate
-uvicorn app.app_definition:app # Alternative: python app/main.py
+python app/main.py
+uvicorn app.app_definition:app  # Alternative: uvicorn directly
 ```
 
 ## Run tests
-app/config/.env TEST_MODE=True (I'll delete it later)
 ```
-pytest # Alternative: python app/run_tests.py
+pytest # Using main database...
+python app/run_tests.py  # Alternative: Using fancy script for tests
+cmd /C "set DB_NAME=testsdb&& pytest" # Alternative: Windows, -s for prints
+DB_NAME=testsdb; pytest # Alternative: Linux
 ```
-
-Windows
-```
-cmd /C "set TEST_MODE=True&& pytest"
-```
-
-Bash
-```bash
-TEST_MODE=True; pytest
-```
- 

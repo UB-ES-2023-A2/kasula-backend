@@ -1,13 +1,13 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.testclient import TestClient
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.config import settings
-from app_definition import app
+from main import app
 
 # Import the test functions
 from tests import test_user_endpoints, test_recipe_endpoints
@@ -52,7 +52,7 @@ def run_single_test(test_func, client):
 
 def run_tests():
     
-    # Change the database for tests because we need to clear all the collections
+    # Change the database for tests to not use the main database
     settings.DB_NAME = settings.DB_TEST
 
     app = initialize()

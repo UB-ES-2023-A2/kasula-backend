@@ -2,11 +2,13 @@ name: Backend Unit Tests
 
 env:
   DB_URL: ${{secrets.DB_URL}}
-  SECRET_KEY: ${{secrets.SECRET_KEY}}
   DB_NAME: ${{secrets.DB_NAME}}
+  SECRET_KEY: ${{secrets.SECRET_KEY}}
   DB_TEST: ${{secrets.DB_TEST}}
   EMAIL_USER: ${{secrets.EMAIL_USER}}
   EMAIL_PASS: ${{secrets.EMAIL_PASS}}
+  HOST: ${{secrets.HOST}}
+  PORT: ${{secrets.PORT}}
 
 on: [push]
 
