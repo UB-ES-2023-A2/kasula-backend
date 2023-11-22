@@ -40,6 +40,8 @@ def run_tests():
             test_user_endpoints.test_update_user,
             test_user_endpoints.test_delete_user,
             test_user_endpoints.test_login_for_access_token,
+            test_user_endpoints.test_follow_user,
+            test_user_endpoints.test_unfollow_user,
     ]
 
     recipe_test_functions = [
