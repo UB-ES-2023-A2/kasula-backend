@@ -199,6 +199,8 @@ wheel==0.41.3
     # via pip-tools
 mongomock==4.0.0
     # via -r requirements.in
+mongomock_motor==3.9.0
+    # via -r requirements.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
