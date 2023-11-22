@@ -329,6 +329,10 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
     if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
+    # Check if the target user is already in the current user's following list
+    if target_username in actual_user["following"]:
+        raise HTTPException(status_code=400, detail=f"You are already following user {username}")
+
     # Update the current user's following list
     await db["users"].update_one(
         {"username": actual_user["username"]},
@@ -355,7 +359,11 @@ async def unfollow_user(username: str, current_user: str = Depends(get_current_u
 
     target_username = target_user["username"]
 
-    # Prevent self-unfollow (which doesn't make sense but just in case)
+    # Check if the target user is in the current user's following list
+    if target_username not in actual_user["following"]:
+        raise HTTPException(status_code=400, detail=f"You are not following user {username}")
+
+    # Check if the target user is the same as the current user
     if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
 
