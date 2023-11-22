@@ -102,15 +102,16 @@ async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotor
     raise HTTPException(status_code=404, detail="User not found")
 
 
-@router.get("/{id}", response_description="Get a single user given its id")
-async def show_user(id: str, db: AsyncIOMotorClient = Depends(get_database)):
-    if (user := await db["users"].find_one({"_id": id})) is not None:
+@router.get("/{identifier}", response_description="Get a single user given its id or username")
+async def show_user(identifier: str, db: AsyncIOMotorClient = Depends(get_database)):
+    query = {"$or": [{"_id": identifier}, {"username": identifier}]}
+    if (user := await db["users"].find_one(query)) is not None:
         # Convert ObjectId back to string for the response
         user["_id"] = str(user["_id"])
         user.pop("password", None)  # Remove the password field
         return user
 
-    raise HTTPException(status_code=404, detail=f"User {id} not found")
+    raise HTTPException(status_code=404, detail=f"User {identifier} not found")
 
 @router.put("/{id}", response_description="Update a user")
 async def update_user(
