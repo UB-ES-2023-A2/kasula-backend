@@ -422,15 +422,14 @@ def send_welcome_email(email: str):
         server.login(sender_email, password)
         server.send_message(message)
 
-async def upload_image(file : UploadFile, name):
+async def upload_image(file: UploadFile, name):
     storage_client = storage.Client(project=project_name)
     bucket = storage_client.get_bucket(bucket_name)
     point = name.rindex('.')
-    fullname = 'users/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    fullname = 'recipes/' + name[:point].replace(" ", "_") + '-' + str(time.time_ns()) + name[point:]
     blob = bucket.blob(fullname)
     
     data = await file.read()
-    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
     UPLOAD_DIR = Path('')
     save_to = UPLOAD_DIR / file.filename
     with open(save_to, "wb") as f:
