@@ -75,7 +75,8 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
     await db["collections"].insert_one(jsonable_encoder(collection))
 
     # Send welcome email after successful user creation
-    send_welcome_email(user_email)
+    if not settings.TEST_ENV:
+        send_welcome_email(user_email)
     
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
 
