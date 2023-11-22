@@ -330,6 +330,10 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
     if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot follow yourself")
 
+    # Check if the target user is already in the current user's following list
+    if target_username in actual_user["following"]:
+        raise HTTPException(status_code=400, detail=f"You are already following user {username}")
+
     # Update the current user's following list
     await db["users"].update_one(
         {"username": actual_user["username"]},
@@ -356,7 +360,11 @@ async def unfollow_user(username: str, current_user: str = Depends(get_current_u
 
     target_username = target_user["username"]
 
-    # Prevent self-unfollow (which doesn't make sense but just in case)
+    # Check if the target user is in the current user's following list
+    if target_username not in actual_user["following"]:
+        raise HTTPException(status_code=400, detail=f"You are not following user {username}")
+
+    # Check if the target user is the same as the current user
     if target_username == actual_user["username"]:
         raise HTTPException(status_code=400, detail="Cannot unfollow yourself")
 
@@ -415,15 +423,14 @@ def send_welcome_email(email: str):
         server.login(sender_email, password)
         server.send_message(message)
 
-async def upload_image(file : UploadFile, name):
+async def upload_image(file: UploadFile, name):
     storage_client = storage.Client(project=project_name)
     bucket = storage_client.get_bucket(bucket_name)
     point = name.rindex('.')
-    fullname = 'users/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    fullname = 'recipes/' + name[:point].replace(" ", "_") + '-' + str(time.time_ns()) + name[point:]
     blob = bucket.blob(fullname)
     
     data = await file.read()
-    # Sembla que hauré de guardar temporalment el fitxer perquè el UploadFile no me'l deixa pujar directament
     UPLOAD_DIR = Path('')
     save_to = UPLOAD_DIR / file.filename
     with open(save_to, "wb") as f:

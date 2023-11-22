@@ -240,15 +240,14 @@ def calculate_average_rating(reviews: List[dict]) -> float:
     total_rating = sum(review['rating'] for review in reviews if 'rating' in review)
     return total_rating / len(reviews)
 
-async def upload_image(file : UploadFile, name):
+async def upload_image(file: UploadFile, name):
     storage_client = storage.Client(project=project_name)
     bucket = storage_client.get_bucket(bucket_name)
     point = name.rindex('.')
-    fullname = 'reviews/' + name[:point] + '-' + str(time.time_ns()) + name[point:]
+    fullname = 'recipes/' + name[:point].replace(" ", "_") + '-' + str(time.time_ns()) + name[point:]
     blob = bucket.blob(fullname)
     
     data = await file.read()
-
     UPLOAD_DIR = Path('')
     save_to = UPLOAD_DIR / file.filename
     with open(save_to, "wb") as f:

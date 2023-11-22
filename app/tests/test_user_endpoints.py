@@ -227,3 +227,134 @@ def test_login_for_access_token(client):
     
     # Delete the created user
     delete_created_user(response_create.json()["_id"], response_original.json()["access_token"], client)
+
+def test_follow_user(client):
+    # Create user for this test
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
+    response_create = client.post("/user/", json=user)
+
+    response_original = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+
+    if (response_original.status_code != 200 or
+        "access_token" not in response_original.json()):
+        raise TestAssertionError(response=response_original)
+    
+    access_token = response_original.json()["access_token"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    # Create another user to follow
+    user2 = {
+        "username": "testuser2",
+        "email": "testuser2@example.com",
+        "password": "testpassword"
+    }
+    response_create2 = client.post("/user/", json=user2)
+
+    response_original2 = client.post("/user/token", data={"username": "testuser2", "password": "testpassword"})
+
+    access_token2 = response_original2.json()["access_token"]
+
+    # Test following a user
+    response = client.post("/user/follow/testuser2", headers=headers)
+
+    if (response.status_code != 200 or
+        response.json()["message"] != "Now following user testuser2"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Test following a user that doesn't exist
+    response = client.post("/user/follow/testuser3", headers=headers)
+
+    if (response.status_code != 404 or
+        response.json()["detail"] != "User testuser3 not found"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Test following a user that is already followed
+    response = client.post("/user/follow/testuser2", headers=headers)
+
+    if (response.status_code != 400 or
+        response.json()["detail"] != "You are already following user testuser2"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Delete the created users
+    delete_created_user(response_create.json()["_id"], access_token, client)
+    delete_created_user(response_create2.json()["_id"], access_token2, client)
+
+def test_unfollow_user(client):
+    # Create user for this test
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
+    response_create = client.post("/user/", json=user)
+
+    response_original = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+
+    if (response_original.status_code != 200 or
+        "access_token" not in response_original.json()):
+        raise TestAssertionError(response=response_original)
+    
+    access_token = response_original.json()["access_token"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    # Create another user to follow
+    user2 = {
+        "username": "testuser2",
+        "email": "testuser2@example.com",
+        "password": "testpassword"
+    }
+    response_create2 = client.post("/user/", json=user2)
+
+    response_original2 = client.post("/user/token", data={"username": "testuser2", "password": "testpassword"})
+
+    access_token2 = response_original2.json()["access_token"]
+
+    # Test following a user
+    response = client.post("/user/follow/testuser2", headers=headers)
+
+    if (response.status_code != 200 or
+        response.json()["message"] != "Now following user testuser2"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Test unfollowing a user
+    response = client.post("/user/unfollow/testuser2", headers=headers)
+
+    if (response.status_code != 200 or
+        response.json()["message"] != "Unfollowed user testuser2"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Test unfollowing a user that doesn't exist
+    response = client.post("/user/unfollow/testuser3", headers=headers)
+
+    if (response.status_code != 404 or
+        response.json()["detail"] != "User testuser3 not found"):
+        delete_created_user(response_create.json()["_id"], access_token, client)
+        delete_created_user(response_create2.json()["_id"], access_token2, client)
+        raise TestAssertionError(response=response)
+    
+    # Delete the created users
+    delete_created_user(response_create.json()["_id"], access_token, client)
+    delete_created_user(response_create2.json()["_id"], access_token2, client)
+
+
+

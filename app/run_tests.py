@@ -9,7 +9,7 @@ from app.test_app import unit_tests
 from app.config import settings
 
 # Import the test functions
-from tests import test_user_endpoints, test_recipe_endpoints, test_review_endpoints
+from tests import test_user_endpoints, test_recipe_endpoints, test_review_endpoints, test_collection_endpoints
 from tests.test_user_endpoints import TestAssertionError
 
 def run_single_test(test_func, client):
@@ -40,6 +40,8 @@ def run_tests():
             test_user_endpoints.test_update_user,
             test_user_endpoints.test_delete_user,
             test_user_endpoints.test_login_for_access_token,
+            test_user_endpoints.test_follow_user,
+            test_user_endpoints.test_unfollow_user,
     ]
 
     recipe_test_functions = [
@@ -56,6 +58,20 @@ def run_tests():
         test_review_endpoints.test_delete_review,
         test_review_endpoints.test_get_reviews,
     ]
+
+    collections_test_functions = [
+        test_collection_endpoints.test_favorite_collection,
+        test_collection_endpoints.test_create_collection,
+        test_collection_endpoints.test_delete_collection,
+        test_collection_endpoints.test_update_collection,
+        test_collection_endpoints.test_add_recipe_to_collection,
+        test_collection_endpoints.test_remove_recipe_from_collection,
+        test_collection_endpoints.test_list_collections_by_user,
+        test_collection_endpoints.test_list_recipes_in_collection,
+        test_collection_endpoints.test_get_favorites_collection,
+        test_collection_endpoints.test_add_recipe_favorite_collection,
+        test_collection_endpoints.test_remove_recipe_favorite_collection,
+    ]
     
     start = time.time()
     with TestClient(unit_tests) as client:
@@ -66,6 +82,7 @@ def run_tests():
 
         [run_single_test(test_func, client) for test_func in user_test_functions]
 
+    with TestClient(unit_tests) as client:
         # Recipe tests
         print("\n" + "=" * 40)
         print(" " * 12 + "RECIPE UNIT TESTS" + " " * 12)
@@ -73,12 +90,21 @@ def run_tests():
         
         [run_single_test(test_func, client) for test_func in recipe_test_functions]
 
+    with TestClient(unit_tests) as client:
         # Review tests
         print("\n" + "=" * 40)
         print(" " * 12 + "REVIEW UNIT TESTS" + " " * 12)
         print("=" * 40 + "\n")
 
         [run_single_test(test_func, client) for test_func in review_test_functions]
+
+    with TestClient(unit_tests) as client:
+        # Collection tests
+        print("\n" + "=" * 40)
+        print(" " * 10 + "COLLECTION UNIT TESTS" + " " * 12)
+        print("=" * 40 + "\n")
+
+        [run_single_test(test_func, client) for test_func in collections_test_functions]
 
     end = time.time()
     print(f"\nTotal time taken (Unit Tests): {end - start} seconds")
@@ -97,6 +123,7 @@ def run_tests():
 
         [run_single_test(test_func, client) for test_func in user_test_functions]
 
+    with TestClient(app) as client:
         # Recipe tests
         print("\n" + "=" * 40)
         print(" " * 8 + "RECIPE INTEGRATION TESTS" + " " * 12)
@@ -104,12 +131,21 @@ def run_tests():
         
         [run_single_test(test_func, client) for test_func in recipe_test_functions]
 
+    with TestClient(app) as client:
         # Review tests
         print("\n" + "=" * 40)
         print(" " * 8 + "REVIEW INTEGRATION TESTS" + " " * 12)
         print("=" * 40 + "\n")
 
         [run_single_test(test_func, client) for test_func in review_test_functions]
+
+    with TestClient(app) as client:
+        # Collection tests
+        print("\n" + "=" * 40)
+        print(" " * 10 + "COLLECTION UNIT TESTS" + " " * 12)
+        print("=" * 40 + "\n")
+
+        [run_single_test(test_func, client) for test_func in collections_test_functions]
 
     settings.TEST_ENV = False
     end = time.time()
