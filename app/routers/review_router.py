@@ -2,7 +2,6 @@ from typing import List, Optional
 from .common import *
 
 from app.models.review_model import ReviewModel, UpdateReviewModel
-from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile
 from datetime import datetime
@@ -75,7 +74,7 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     )
 
     if update_result.modified_count == 1:
-        return {"message": "Review added successfully"}
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=review_dict)
 
     raise HTTPException(status_code=500, detail="Failed to add review")
 
@@ -121,7 +120,11 @@ async def update_review(recipe_id: str, review_id: str, update_data: UpdateRevie
     )
 
     if update_result.modified_count == 1:
-        return {"message": "Review updated successfully"}
+        modified_fields = {}
+        for field in update_fields:
+            modified_fields[field.split('.')[-1]] = update_fields[field]
+        return modified_fields
+        
     raise HTTPException(status_code=404, detail="Recipe or review not found")
 
 
