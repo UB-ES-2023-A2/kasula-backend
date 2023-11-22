@@ -26,6 +26,7 @@ class DatabaseSettings(BaseSettings):
     DB_URL: str = os.getenv("DB_URL")
     DB_NAME: str = os.getenv("DB_NAME")
     DB_TEST: str | None = os.getenv("DB_TEST")
+    TEST_ENV: bool = bool(os.getenv("TEST_ENV", False))
 
 
 class Settings(CommonSettings, ServerSettings, DatabaseSettings):

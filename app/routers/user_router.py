@@ -11,11 +11,11 @@ from pathlib import Path
 from typing import List, Optional
 import json
 import uuid
+from app.config import settings
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
 
-import random
 import smtplib
 import ssl
 import os
@@ -75,7 +75,8 @@ async def create_user(request: Request, user: UserModel = Body(...), db: AsyncIO
     await db["collections"].insert_one(jsonable_encoder(collection))
 
     # Send welcome email after successful user creation
-    send_welcome_email(user_email)
+    if not settings.TEST_ENV:
+        send_welcome_email(user_email)
     
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=created_user)
 
@@ -93,7 +94,6 @@ async def list_users(db: AsyncIOMotorClient = Depends(get_database)):
 
 @router.get("/me", response_description="Get current user")
 async def get_me(current_user: str = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
-    print(current_user)
     user = await db["users"].find_one({"_id": current_user["user_id"]})
     if user:
         user["_id"] = str(user["_id"])  # Convert ObjectId to string
@@ -153,7 +153,7 @@ async def update_user(
             {"_id": id}, {"$set": user_update}
         )
 
-        if 'username' in user_update:
+        if 'username' in user_update and not settings.TEST_ENV:
             # Update the username in all recipes created by the user
             await db["recipes"].update_many(
                 {"user_id": id}, {"$set": {"username": user_update["username"]}}

@@ -5,6 +5,7 @@ env:
   DB_NAME: ${{secrets.DB_NAME}}
   SECRET_KEY: ${{secrets.SECRET_KEY}}
   DB_TEST: ${{secrets.DB_TEST}}
+  TEST_ENV: ${{secrets.TEST_ENV}}
   EMAIL_USER: ${{secrets.EMAIL_USER}}
   EMAIL_PASS: ${{secrets.EMAIL_PASS}}
   HOST: ${{secrets.HOST}}
@@ -25,13 +26,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-        #  cache: 'pip'
+          python-version: '3.11'
+          cache: 'pip'
       
       - name: Install dependencies
         run: |
-          pip install pip-tools
-          pip-compile requirements.in
           pip install -r requirements.txt
       
       - name: Run tests
