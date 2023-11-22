@@ -1,17 +1,32 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
 from app.routers import user_router, recipe_router, review_router, collection_router
 
+# Define the startup and shutdown logic using async context manager
+@asynccontextmanager
+async def app_lifespan(app: FastAPI):
+    # Startup logic
+    if settings.TEST_ENV:
+        app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
+        app.mongodb = app.mongodb_client[settings.DB_TEST]
+    else:
+        app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
+        app.mongodb = app.mongodb_client[settings.DB_NAME]
+    
+    yield  # The application runs while this yield is active
 
-app = FastAPI()
+    # Shutdown logic
+    app.mongodb_client.close()
+
+app = FastAPI(lifespan=app_lifespan)
 
 # Allow all origins for development purposes, to be able to use
 # the local / deployed backend either with a local or deployed frontend.
 origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -19,16 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# It's deprecated maybe we should change it sometime
-@app.on_event("startup")
-async def startup_db_client():
-    app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
-    app.mongodb = app.mongodb_client[settings.DB_NAME]
-
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    app.mongodb_client.close()
 
 app.include_router(user_router.router, tags=["users"], prefix="/user")
 app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")

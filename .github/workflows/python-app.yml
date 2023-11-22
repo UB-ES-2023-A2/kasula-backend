@@ -5,6 +5,7 @@ env:
   SECRET_KEY: ${{secrets.SECRET_KEY}}
   DB_NAME: ${{secrets.DB_NAME}}
   DB_TEST: ${{secrets.DB_TEST}}
+  DB_ENV: ${{secrets.DB_TEST}}
   EMAIL_USER: ${{secrets.EMAIL_USER}}
   EMAIL_PASS: ${{secrets.EMAIL_PASS}}
 

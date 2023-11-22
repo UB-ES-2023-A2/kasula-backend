@@ -11,11 +11,11 @@ from pathlib import Path
 from typing import List, Optional
 import json
 import uuid
+from app.config import settings
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
 
-import random
 import smtplib
 import ssl
 import os
@@ -151,7 +151,7 @@ async def update_user(
             {"_id": id}, {"$set": user_update}
         )
 
-        if 'username' in user_update:
+        if 'username' in user_update and not settings.TEST_ENV:
             # Update the username in all recipes created by the user
             await db["recipes"].update_many(
                 {"user_id": id}, {"$set": {"username": user_update["username"]}}
