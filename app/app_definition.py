@@ -17,6 +17,11 @@ async def app_lifespan(app: FastAPI):
     if settings.TEST_ENV:
         app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
         app.mongodb = app.mongodb_client[settings.DB_TEST]
+
+        # Clear the collections before running the tests
+        await app.mongodb["users"].drop()
+        await app.mongodb["recipes"].drop()
+
     else:
         app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)
         app.mongodb = app.mongodb_client[settings.DB_NAME]

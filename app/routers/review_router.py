@@ -2,7 +2,6 @@ from typing import List, Optional
 from .common import *
 
 from app.models.review_model import ReviewModel, UpdateReviewModel
-from app.models.recipe_model import RecipeModel, UpdateRecipeModel
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile
 from datetime import datetime
@@ -75,7 +74,7 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     )
 
     if update_result.modified_count == 1:
-        return {"message": "Review added successfully"}
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content=review_dict)
 
     raise HTTPException(status_code=500, detail="Failed to add review")
 
@@ -121,7 +120,11 @@ async def update_review(recipe_id: str, review_id: str, update_data: UpdateRevie
     )
 
     if update_result.modified_count == 1:
-        return {"message": "Review updated successfully"}
+        modified_fields = {}
+        for field in update_fields:
+            modified_fields[field.split('.')[-1]] = update_fields[field]
+        return modified_fields
+        
     raise HTTPException(status_code=404, detail="Recipe or review not found")
 
 
@@ -199,6 +202,35 @@ async def like_review(recipe_id: str, review_id: str, current_user: UserModel = 
             if update_result.modified_count == 1:
                 return {"message": "Review liked successfully"}
             raise HTTPException(status_code=500, detail="An error occurred while liking the review")
+
+    raise HTTPException(status_code=404, detail="Review not found")
+
+
+@router.patch("/unlike/{recipe_id}/{review_id}", response_description="Unlike a review")
+async def unlike_review(recipe_id: str, review_id: str, current_user: UserModel = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
+    recipe = await db["recipes"].find_one({"_id": recipe_id})
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe or review not found")
+
+    user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    # Check if the current user has already liked the review
+    for review in recipe["reviews"]:
+        if review["_id"] == review_id:
+            # Check if the current user has liked the review
+            if user["username"] not in review.get("liked_by", []):
+                raise HTTPException(status_code=400, detail="You have not liked this review")
+
+            # Update the review to remove the username from liked_by and decrement likes
+            update_result = await db["recipes"].update_one(
+                {"_id": recipe_id, "reviews._id": review_id},
+                {"$inc": {"reviews.$.likes": -1}, "$pull": {"reviews.$.liked_by": user["username"]}}
+            )
+
+            if update_result.modified_count == 1:
+                return {"message": "Review unliked successfully"}
+            raise HTTPException(status_code=500, detail="An error occurred while unliking the review")
 
     raise HTTPException(status_code=404, detail="Review not found")
 
