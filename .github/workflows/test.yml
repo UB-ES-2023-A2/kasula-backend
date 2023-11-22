@@ -1,4 +1,4 @@
-name: Backend Unit Tests
+name: Unit & Integration Tests
 
 env:
   DB_URL: ${{secrets.DB_URL}}
