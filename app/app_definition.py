@@ -21,6 +21,7 @@ async def app_lifespan(app: FastAPI):
         # Clear the collections before running the tests
         await app.mongodb["users"].drop()
         await app.mongodb["recipes"].drop()
+        await app.mongodb["collections"].drop()
 
     else:
         app.mongodb_client = AsyncIOMotorClient(settings.DB_URL)

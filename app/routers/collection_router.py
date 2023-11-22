@@ -34,7 +34,7 @@ async def delete_collection(collection_id: str, current_user: UserModel = Depend
     if not collection.get("favorite", False):
         if collection and collection["user_id"] == str(current_user["user_id"]):
             await db["collections"].delete_one({"_id": collection_id})
-            return {"message": "Collection deleted"}
+            return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Collection deleted"})
         else:
             raise HTTPException(status_code=404, detail="Collection not found or access denied")
     else:
@@ -139,7 +139,7 @@ async def get_favorites_collection(username: str, db: AsyncIOMotorClient = Depen
     else:
         raise HTTPException(status_code=403, detail="Access denied")
 
-@router.put("/favorites/add_recipe/{recipe_id}", response_description="Add a recipe to the favorites collection of the current user")
+@router.patch("/favorites/add_recipe/{recipe_id}", response_description="Add a recipe to the favorites collection of the current user")
 async def add_recipe_to_favorites(recipe_id: str, current_user: UserModel = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
     collection = await db["collections"].find_one({"username": current_user["username"], "favorite": True})
     if collection:
@@ -149,7 +149,7 @@ async def add_recipe_to_favorites(recipe_id: str, current_user: UserModel = Depe
     else:
         raise HTTPException(status_code=404, detail="Favorites collection not found")
 
-@router.put("/favorites/remove_recipe/{recipe_id}", response_description="Remove a recipe from the favorites collection of the current user")
+@router.patch("/favorites/remove_recipe/{recipe_id}", response_description="Remove a recipe from the favorites collection of the current user")
 async def remove_recipe_from_favorites(recipe_id: str, current_user: UserModel = Depends(get_current_user), db: AsyncIOMotorClient = Depends(get_database)):
     collection = await db["collections"].find_one({"username": current_user["username"], "favorite": True})
     if collection:
