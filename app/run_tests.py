@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 import sys
 import os
 import time
+import coverage
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -32,6 +33,8 @@ def run_single_test(test_func, client):
     return result
 
 def run_tests():
+    cov = coverage.Coverage()
+    cov.start()
     user_test_functions = [
             test_user_endpoints.test_create_user,
             test_user_endpoints.test_list_users,
@@ -73,6 +76,7 @@ def run_tests():
         test_collection_endpoints.test_remove_recipe_favorite_collection,
     ]
     
+    # Unit tests
     start = time.time()
     with TestClient(unit_tests) as client:
         # User testss
@@ -109,6 +113,7 @@ def run_tests():
     end = time.time()
     print(f"\nTotal time taken (Unit Tests): {end - start} seconds")
 
+    # Integration tests
     settings.TEST_ENV = True
     from app.app_definition import app
     start = time.time()
@@ -142,7 +147,7 @@ def run_tests():
     with TestClient(app) as client:
         # Collection tests
         print("\n" + "=" * 40)
-        print(" " * 10 + "COLLECTION UNIT TESTS" + " " * 12)
+        print(" " * 8 + "COLLECTION INTEGRATION TESTS" + " " * 12)
         print("=" * 40 + "\n")
 
         [run_single_test(test_func, client) for test_func in collections_test_functions]
@@ -150,6 +155,14 @@ def run_tests():
     settings.TEST_ENV = False
     end = time.time()
     print(f"\nTotal time taken (Integration Tests): {end - start} seconds")
+
+    cov.stop()
+    cov.save()
+
+    print("\n\n" + "-" * 50 + "\n")
+    print("Total coverage report:")
+
+    cov.report()
 
 if __name__ == "__main__":
     run_tests()
