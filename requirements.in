@@ -22,6 +22,7 @@ pyjwt
 httpx
 requests
 pytest
+coverage
 
 # Google Cloud Storage
 google-cloud-storage
