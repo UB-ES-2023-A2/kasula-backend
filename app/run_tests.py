@@ -10,13 +10,18 @@ from app.test_app import unit_tests
 from app.config import settings
 
 # Import the test functions
-from tests import test_user_endpoints, test_recipe_endpoints, test_review_endpoints, test_collection_endpoints
+from tests import test_user_endpoints, test_recipe_endpoints, test_review_endpoints
+from tests import test_collection_endpoints, test_security_hashing, test_token
 from tests.test_user_endpoints import TestAssertionError
 
-def run_single_test(test_func, client):
+def run_single_test(test_func, client, extra=False):
     try:
-        test_func(client)
-        result = (test_func.__name__, "PASSED✅")
+        if extra:
+            test_func()
+            result = (test_func.__name__, "PASSED✅")
+        else:
+            test_func(client)
+            result = (test_func.__name__, "PASSED✅")
     except TestAssertionError as e:
         error_detail = ""
         try:
@@ -33,8 +38,10 @@ def run_single_test(test_func, client):
     return result
 
 def run_tests():
-    cov = coverage.Coverage()
+    # Initialize the coverage object, omitting 'tests' and 'models' directories
+    cov = coverage.Coverage(omit=['*/app/models/*', '*/app/run_tests.py'])
     cov.start()
+    
     user_test_functions = [
             test_user_endpoints.test_create_user,
             test_user_endpoints.test_list_users,
@@ -74,6 +81,17 @@ def run_tests():
         test_collection_endpoints.test_get_favorites_collection,
         test_collection_endpoints.test_add_recipe_favorite_collection,
         test_collection_endpoints.test_remove_recipe_favorite_collection,
+    ]
+
+    security_hashing_test_functions = [
+        test_security_hashing.test_hash_password,
+        test_security_hashing.test_verify_password,
+    ]
+
+    token_test_functions = [
+        test_token.test_create_access_token_default_expires,
+        test_token.test_create_access_token_custom_expires,
+        test_token.test_create_access_token_with_additional_data,
     ]
     
     # Unit tests
@@ -155,6 +173,20 @@ def run_tests():
     settings.TEST_ENV = False
     end = time.time()
     print(f"\nTotal time taken (Integration Tests): {end - start} seconds")
+
+    # Security tests
+    print("\n\n" + "-" * 50 + "\n")
+
+    print("\n" + "=" * 40)
+    print(" " * 12 + "SECURITY TESTS" + " " * 12)
+    print("=" * 40 + "\n")
+    [run_single_test(test_func, client, True) for test_func in security_hashing_test_functions]
+
+    # Token tests
+    print("\n" + "=" * 40)
+    print(" " * 12 + "TOKEN TESTS" + " " * 12)
+    print("=" * 40 + "\n")
+    [run_single_test(test_func, client, True) for test_func in token_test_functions]
 
     cov.stop()
     cov.save()
