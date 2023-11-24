@@ -1,8 +1,5 @@
 import json
 import uuid
-from bson import ObjectId
-from fastapi.testclient import TestClient
-from app.app_definition import app
 
 # To test these endpoints, we will focus on the following testing parameters:
 
@@ -25,274 +22,293 @@ def is_valid_uuid(val):
     except ValueError:
         return False
 
-def delete_created_recipe(recipe_id: str, token: str):
+def delete_created_recipe(recipe_id: str, token: str, client):
     """Helper function to delete a created recipe during testing."""
     headers = {
         "Authorization": f"Bearer {token}"
     }
-    with TestClient(app) as client:
-        # Assuming there's a DELETE endpoint for the recipe
-        response = client.delete(f"/recipe/{recipe_id}", headers=headers)
-        if response.status_code != 200:
-            raise TestCleanupError(response=response)
+    
+    response = client.delete(f"/recipe/{recipe_id}", headers=headers)
 
-def delete_created_user(user_id, access_token):
+    if response.status_code != 200:
+        raise TestAssertionError(response=response)
+
+def delete_created_user(user_id, access_token, client):
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
-    with TestClient(app) as client:
-        response = client.delete(f"/user/{user_id}", headers=headers)
 
-def test_create_recipe():
-    with TestClient(app) as client:
-        # Authenticate the user first
-        user = {
-            "username": "testuser",
-            "email": "testuser@example.com",
-            "password": "testpassword"
-        }
-        response_user = client.post("/user/", json=user)
-        response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
-        access_token = response_token.json()["access_token"]
+    response = client.delete(f"/user/{user_id}", headers=headers)
 
-        if (response_user.status_code != 201 or 
-            response_user.json()["username"] != "testuser" or 
-            response_user.json()["email"] != "testuser@example.com" or 
-            not is_valid_uuid(response_user.json()["_id"])):
-            raise TestAssertionError(response=response_user)
+    if response.status_code != 200:
+        raise TestAssertionError(response=response)
 
-        user_id = response_user.json()["_id"]
+def test_create_recipe(client):
+    # Authenticate the user first
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
 
-        # Test creating a new recipe
-        recipe = {
-            'id': 'fuck off',
-            "name": "Glass of Water",
-            "ingredients": [
-                {
-                    "name": "Water",
-                    "quantity": 1,
-                    "unit": "cup"
-                }
-            ],
-            "instructions": [
-                {
-                    "body": "Get a cup",
-                    "step_number": 0
-                },
-                {
-                "body": "Pour Water",
-                "step_number": 1
-                }
-            ],
-            "cooking_time": 1,
-            "difficulty": 0
-        }
-        # ChatGPT OP
-        data = {
-            "recipe": (None, json.dumps(recipe), "application/json"),
-            #"file": ("filename.txt", open("app/tests/tomate-frito-casero.jpg", "rb"))
-        }
-        response = client.post("/recipe/", files=data, headers=headers)
+    if (response_user.status_code != 201 or 
+        response_user.json()["username"] != "testuser" or 
+        response_user.json()["email"] != "testuser@example.com" or 
+        not is_valid_uuid(response_user.json()["_id"])):
+        raise TestAssertionError(response=response_user)
 
-        if response.status_code != 201:
-            delete_created_user(user_id, access_token)
-            raise TestAssertionError(response=response)
+    user_id = response_user.json()["_id"]
 
-        # Cleanup
-        created_recipe_id = response.json()["_id"]
-        delete_created_recipe(created_recipe_id, access_token)
-        delete_created_user(user_id, access_token)
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
 
-def test_list_recipes():
-    with TestClient(app) as client:
-        # Test listing all users
-        response = client.get("/recipe/")
+    # Test creating a new recipe
+    recipe = {
+        "name": "Glass of Water",
+        "ingredients": [
+            {
+                "name": "Water",
+                "quantity": 1,
+                "unit": "cup"
+            }
+        ],
+        "instructions": [
+            {
+                "body": "Get a cup",
+                "step_number": 0
+            },
+            {
+            "body": "Pour Water",
+            "step_number": 1
+            }
+        ],
+        "cooking_time": 1,
+        "difficulty": 0
+    }
 
-        if response.status_code != 200 or not isinstance(response.json(), list):
-            raise TestAssertionError(response=response)
+    data = {
+        "recipe": (None, json.dumps(recipe), "application/json"),
+    }
+    response = client.post("/recipe/", files=data, headers=headers)
 
-def test_show_recipe():
-    with TestClient(app) as client:
-        # Authenticate and create a test recipe
-        user = {
-            "username": "testuser",
-            "email": "testuser@example.com",
-            "password": "testpassword"
-        }
-        response_user = client.post("/user/", json=user)
-        response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
-        access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+    if response.status_code != 201:
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response)
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+    # Cleanup
+    created_recipe_id = response.json()["_id"]
+    delete_created_recipe(created_recipe_id, access_token, client)
+    delete_created_user(user_id, access_token, client)
 
-        recipe = {
-            "name": "Glass of Water",
-            "ingredients": [
-                {
-                    "name": "Water",
-                    "quantity": 1,
-                    "unit": "cup"
-                }
-            ],
-            "instructions": [
-                {
-                    "body": "Get a cup",
-                    "step_number": 0
-                },
-                {
-                "body": "Pour Water",
-                "step_number": 1
-                }
-            ],
-            "cooking_time": 1,
-            "difficulty": 0,
-            "image": "None"
-        }
-        response_original = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
-        print('WWWWWWWW')
-        print(response_original.json())
-        print('WWWWWWWW')
-        created_recipe_id = response_original.json()["_id"]
+def test_list_recipes(client):
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
 
-        # Test getting a single recipe by ID
-        response = client.get(f"/recipe/{created_recipe_id}")
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
 
-        if response.status_code != 200 or response.json()["_id"] != created_recipe_id:
-            delete_created_recipe(created_recipe_id, access_token)
-            delete_created_user(user_id, access_token)
-            raise TestAssertionError(response=response)
+    user_id = response_user.json()["_id"]
 
-        # Test getting a non-existing recipe by ID
-        response = client.get("/recipe/1234")
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
 
-        if response.status_code != 404:
-            delete_created_recipe(created_recipe_id, access_token)
-            delete_created_user(user_id, access_token)
-            raise TestAssertionError(response=response)
+    # Test listing all recipes
+    response = client.get("/recipe/", headers=headers)
 
-        # Cleanup
-        delete_created_recipe(created_recipe_id, access_token)
-        delete_created_user(user_id, access_token)
+    if response.status_code != 200:
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response)
+    
+    delete_created_user(user_id, access_token, client)
 
-def test_update_recipe():
-    with TestClient(app) as client:
-        # Authenticate the user first (This is the same as the previous test)
-        user = {
-            "username": "testuser",
-            "email": "testuser@example.com",
-            "password": "testpassword"
-        }
-        response_user = client.post("/user/", json=user)
-        response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
-        access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+def test_show_recipe(client):
+    # Authenticate and create a test recipe
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
 
-        recipe = {
-            "name": "Glass of Water",
-            "ingredients": [
-                {
-                    "name": "Water",
-                    "quantity": 1,
-                    "unit": "cup"
-                }
-            ],
-            "instructions": [
-                {
-                    "body": "Get a cup",
-                    "step_number": 0
-                },
-                {
-                "body": "Pour Water",
-                "step_number": 1
-                }
-            ],
-            "cooking_time": 1,
-            "difficulty": 0,
-            "image": "None"
-        }
-        response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
-        created_recipe_id = response.json()["_id"]
+    user_id = response_user.json()["_id"]
 
-        # Update the created recipe
-        updated_recipe_data = {
-            "name": "Glass of Cold Water",
-            "cooking_time": 2
-        }
-        response_update = client.put(f"/recipe/{created_recipe_id}", json=updated_recipe_data, headers=headers)
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
 
-        if (response_update.status_code != 200
-            or response_update.json()["name"] != "Glass of Cold Water"
-            or response_update.json()["cooking_time"] != 2):
-            delete_created_recipe(created_recipe_id, access_token)
-            delete_created_user(user_id, access_token)
-            raise TestAssertionError(response=response_update)
+    recipe = {
+        "name": "Glass of Water",
+        "ingredients": [
+            {
+                "name": "Water",
+                "quantity": 1,
+                "unit": "cup"
+            }
+        ],
+        "instructions": [
+            {
+                "body": "Get a cup",
+                "step_number": 0
+            },
+            {
+            "body": "Pour Water",
+            "step_number": 1
+            }
+        ],
+        "cooking_time": 1,
+        "difficulty": 0,
+        "image": "None"
+    }
+    response_original = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
+    created_recipe_id = response_original.json()["_id"]
 
-        # Cleanup
-        delete_created_recipe(created_recipe_id, access_token)
-        delete_created_user(user_id, access_token)
+    # Test getting a single recipe by ID
+    response = client.get(f"/recipe/{created_recipe_id}", headers=headers)
 
-def test_delete_recipe():
-    with TestClient(app) as client:
-        # Authenticate the user first (This is the same as the previous test)
-        user = {
-            "username": "testuser",
-            "email": "testuser@example.com",
-            "password": "testpassword"
-        }
-        response_user = client.post("/user/", json=user)
-        response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
-        access_token = response_token.json()["access_token"]
-        user_id = response_user.json()["_id"]
+    if response.status_code != 200 or response.json()["_id"] != created_recipe_id:
+        delete_created_recipe(created_recipe_id, access_token, client)
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response)
 
-        headers = {
-            "Authorization": f"Bearer {access_token}"
-        }
+    # Test getting a non-existing recipe by ID
+    response = client.get("/recipe/1234", headers=headers)
 
-        recipe = {
-            "name": "Glass of Water",
-            "ingredients": [
-                {
-                    "name": "Water",
-                    "quantity": 1,
-                    "unit": "cup"
-                }
-            ],
-            "instructions": [
-                {
-                    "body": "Get a cup",
-                    "step_number": 0
-                },
-                {
-                "body": "Pour Water",
-                "step_number": 1
-                }
-            ],
-            "cooking_time": 1,
-            "difficulty": 0,
-            "image": "None"
-        }
-        response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
-        created_recipe_id = response.json()["_id"]
+    if response.status_code != 404:
+        delete_created_recipe(created_recipe_id, access_token, client)
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response)
 
-        # Delete the created recipe
-        response_delete = client.delete(f"/recipe/{created_recipe_id}", headers=headers)
+    # Cleanup
+    delete_created_recipe(created_recipe_id, access_token, client)
+    delete_created_user(user_id, access_token, client)
 
-        if (response_delete.status_code != 200
-            or response_delete.json()["message"] != "Recipe successfully deleted"):
-            delete_created_recipe(created_recipe_id, access_token)
-            delete_created_user(user_id, access_token)
-            raise TestAssertionError(response=response_delete)
+def test_update_recipe(client):
+    # Authenticate the user first (This is the same as the previous test)
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
 
-        # Cleanup
-        delete_created_user(user_id, access_token)
+    user_id = response_user.json()["_id"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    recipe = {
+        "name": "Glass of Water",
+        "ingredients": [
+            {
+                "name": "Water",
+                "quantity": 1,
+                "unit": "cup"
+            }
+        ],
+        "instructions": [
+            {
+                "body": "Get a cup",
+                "step_number": 0
+            },
+            {
+            "body": "Pour Water",
+            "step_number": 1
+            }
+        ],
+        "cooking_time": 1,
+        "difficulty": 0,
+        "image": "None"
+    }
+    
+    response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
+    created_recipe_id = response.json()["_id"]
+
+    # Update the created recipe
+    updated_recipe_data = {
+        "name": "Glass of Cold Water",
+        "cooking_time": 2
+    }
+    
+    response_update = client.put(f"/recipe/{created_recipe_id}", files={"recipe": (None, json.dumps(updated_recipe_data), "application/json")}, headers=headers)
+
+    if (response_update.status_code != 200
+        or response_update.json()["name"] != "Glass of Cold Water"
+        or response_update.json()["cooking_time"] != 2):
+        delete_created_recipe(created_recipe_id, access_token, client)
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response_update)
+
+    # Cleanup
+    delete_created_recipe(created_recipe_id, access_token, client)
+    delete_created_user(user_id, access_token, client)
+
+def test_delete_recipe(client):
+    # Authenticate the user first (This is the same as the previous test)
+    user = {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword"
+    }
+    response_user = client.post("/user/", json=user)
+    response_token = client.post("/user/token", data={"username": "testuser", "password": "testpassword"})
+    access_token = response_token.json()["access_token"]
+
+    user_id = response_user.json()["_id"]
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    recipe = {
+        "name": "Glass of Water",
+        "ingredients": [
+            {
+                "name": "Water",
+                "quantity": 1,
+                "unit": "cup"
+            }
+        ],
+        "instructions": [
+            {
+                "body": "Get a cup",
+                "step_number": 0
+            },
+            {
+            "body": "Pour Water",
+            "step_number": 1
+            }
+        ],
+        "cooking_time": 1,
+        "difficulty": 0,
+        "image": "None"
+    }
+    response = client.post("/recipe/", files={"recipe": (None, json.dumps(recipe), "application/json")}, headers=headers)
+    created_recipe_id = response.json()["_id"]
+
+    # Delete the created recipe
+    response_delete = client.delete(f"/recipe/{created_recipe_id}", headers=headers)
+
+    if (response_delete.status_code != 200
+        or response_delete.json()["message"] != "Recipe successfully deleted"):
+        delete_created_recipe(created_recipe_id, access_token, client)
+        delete_created_user(user_id, access_token, client)
+        raise TestAssertionError(response=response_delete)
+
+    # Cleanup
+    delete_created_user(user_id, access_token, client)

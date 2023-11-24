@@ -32,7 +32,7 @@ class IngredientModel(BaseModel):
 
 
 class RecipeIngredient(IngredientModel):
-    quantity: int = Field(1)
+    quantity: float = Field(1)
     unit: Unit = Field(...)
 
     class Config:
@@ -48,7 +48,7 @@ class RecipeIngredient(IngredientModel):
 
 class UpdateIngredientModel(BaseModel):
     name: Optional[str]
-    quantity: Optional[int]
+    quantity: Optional[float]
 
     class Config:
         json_schema_extra = {

@@ -1,8 +1,10 @@
 import random
 from .common import *
 from typing import Optional
+from datetime import datetime
+from pydantic import BaseModel, Field
 import uuid
-
+from typing import List
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=uuid.uuid4, alias="_id")
@@ -11,6 +13,10 @@ class UserModel(BaseModel):
     password: str = Field(...)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
+    followers: List[str] = Field(default_factory=list)
+    following: List[str] = Field(default_factory=list)
+    joining_date: datetime = Field(default_factory=datetime.utcnow)
+    is_private: bool = Field(default=False)
 
     class Config:
         populate_by_name = True
@@ -32,6 +38,7 @@ class UpdateUserModel(BaseModel):
     password: Optional[str] = Field(None)
     profile_picture: Optional[str] = Field(None)
     bio: Optional[str] = Field(None)
+    is_private: Optional[bool] = Field(None)
 
     class Config:
         json_schema_extra = {
