@@ -78,6 +78,7 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 
     recipes = []
     query = {"$or": [{"is_public": True}]}
+
     if username:
         query["$or"].append({"username": username})
         query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
@@ -87,6 +88,61 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 
     if not recipes:
         return []
+
+    return recipes
+
+@router.get("/magic", response_description="Get recipes with filtering, sorting, and pagination")
+async def get_recipes(
+    start: Optional[int] = 0,
+    size: Optional[int] = 10,
+    sort_by: Optional[str] = None,
+    order: Optional[bool] = True,
+    min_cooking_time: Optional[int] = None,
+    max_cooking_time: Optional[int] = None,
+    min_difficulty: Optional[int] = None,
+    max_difficulty: Optional[int] = None,
+    min_energy: Optional[int] = None,
+    max_energy: Optional[int] = None,
+    min_rating: Optional[float] = None,
+    max_rating: Optional[float] = None,
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    query = {}
+
+    if min_cooking_time is not None:
+        query["cooking_time"] = {"$gte": min_cooking_time}
+    if max_cooking_time is not None:
+        query.setdefault("cooking_time", {})["$lte"] = max_cooking_time
+    if min_difficulty is not None:
+        query["difficulty"] = {"$gte": min_difficulty}
+    if max_difficulty is not None:
+        query.setdefault("difficulty", {})["$lte"] = max_difficulty
+    if min_energy is not None:
+        query["energy"] = {"$gte": min_energy}
+    if max_energy is not None:
+        query.setdefault("energy", {})["$lte"] = max_energy
+    if min_rating is not None:
+        query["average_rating"] = {"$gte": min_rating}
+    if max_rating is not None:
+        query.setdefault("average_rating", {})["$lte"] = max_rating
+
+    # Sorting
+    if sort_by:
+        sort_order = pymongo.ASCENDING if order else pymongo.DESCENDING
+        sort_params = [(sort_by, sort_order)]
+    else:
+        sort_params = None  # No sorting
+
+    # Pagination
+    skip_amount = start if start is not None else 0
+    limit_amount = size if size is not None else 10
+
+    recipes = []
+    cursor = db["recipes"].find(query)
+    if sort_params:
+        cursor = cursor.sort(sort_params)
+    async for recipe in cursor.skip(skip_amount).limit(limit_amount):
+        recipes.append(recipe)
 
     return recipes
 
