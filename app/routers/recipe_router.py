@@ -78,6 +78,7 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 
     recipes = []
     query = {"$or": [{"is_public": True}]}
+
     if username:
         query["$or"].append({"username": username})
         query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
@@ -89,6 +90,32 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
         return []
 
     return recipes
+
+@router.get("/similar/{id}", response_description="List similar recipes")
+async def list_similar_recipes(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    username = current_user["username"] if current_user else None
+
+    if username:
+        # Retrieve the current user from the database
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    # Retrieve the current recipe from the database
+    recipe = await db["recipes"].find_one({"_id": id})
+
+    if recipe is None:
+        raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
+    similar_recipes = []
+    query = {"$or": [{"is_public": True}]}
+
+    if username:
+        query["$or"].append({"username": username})
+        query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
+
+    # Retrieve all similar recipes
+    similar_recipes = await db["recipes"].aggregate([{"$sample": {"size": 6}}]).to_list(length=6)
+
+    return similar_recipes
 
 @router.get("/{id}", response_description="Get a single recipe given its id")
 async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
