@@ -447,7 +447,7 @@ async def list_users_randomly(current_user: str = Depends(get_current_user), db:
 
     if not actual_user["following"]:
         users = []
-        for doc in await db["users"].aggregate([{"$match": {"_id": {"$ne": actual_user["_id"]}}}, {"$sample": {"size": 100}}]).to_list(length=100):
+        for doc in await db["users"].aggregate([{"$match": {"_id": {"$ne": actual_user["_id"]}}}, {"$sample": {"size": 10}}]).to_list(length=10):
             if isinstance(doc["_id"], ObjectId):
                 doc["_id"] = str(doc["_id"])
             doc.pop("password", None)  # Remove the password field
