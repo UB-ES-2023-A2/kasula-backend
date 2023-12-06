@@ -21,6 +21,10 @@ router = APIRouter()
 def get_database(request: Request):
     return request.app.mongodb
 
+def create_flexible_regex(search_term):
+    pattern = '.*'.join(map(re.escape, search_term))  # This will create a pattern with .* between each character
+    return {'$regex': pattern, '$options': 'i'}
+
 @router.post("/", response_description="Add new recipe")
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), files: List[UploadFile] = File(None), current_user: UserModel = Depends(get_current_user)):
     # Retrieve the current user from the database
@@ -106,6 +110,7 @@ async def get_recipes(
     max_energy: Optional[int] = None,
     min_rating: Optional[float] = None,
     max_rating: Optional[float] = None,
+    search: Optional[str] = None,
     db: AsyncIOMotorClient = Depends(get_database)
 ):
     query = {}
@@ -126,6 +131,15 @@ async def get_recipes(
         query["average_rating"] = {"$gte": min_rating}
     if max_rating is not None:
         query.setdefault("average_rating", {})["$lte"] = max_rating
+
+    # Flexible search functionality
+    if search:
+        regex_search = create_flexible_regex(search)
+        query["$or"] = [
+            {"name": regex_search},
+            {"ingredients.name": regex_search},
+            {"username": regex_search}
+        ]
 
     # Sorting
     if sort_by:
