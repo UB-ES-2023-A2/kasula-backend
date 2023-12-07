@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 import uuid
 from typing import List
+from app.models.notification_model import NotificationModel
 
 class UserModel(BaseModel):
     id: str = Field(default_factory=uuid.uuid4, alias="_id")
@@ -17,6 +18,7 @@ class UserModel(BaseModel):
     following: List[str] = Field(default_factory=list)
     joining_date: datetime = Field(default_factory=datetime.utcnow)
     is_private: bool = Field(default=False)
+    notifications: List[NotificationModel] = Field(default_factory=list)
 
     class Config:
         populate_by_name = True

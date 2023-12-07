@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from app.config import settings
-from app.routers import user_router, recipe_router, review_router, collection_router
+from app.routers import user_router, recipe_router, review_router, collection_router, notifications_router
 
 # Define the startup and shutdown logic using async context manager
 @asynccontextmanager
@@ -49,6 +49,7 @@ app.include_router(user_router.router, tags=["users"], prefix="/user")
 app.include_router(recipe_router.router, tags=["recipes"], prefix="/recipe")
 app.include_router(review_router.router, tags=["reviews"], prefix="/review")
 app.include_router(collection_router.router, tags=["collections"], prefix="/collection")
+app.include_router(notifications_router.router)
 
 @app.get("/")
 async def root():
