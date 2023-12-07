@@ -145,7 +145,8 @@ async def get_recipes(
     # Sorting
     if sort_by:
         sort_order = pymongo.ASCENDING if order else pymongo.DESCENDING
-        sort_params = [(sort_by, sort_order)]
+        # Add a secondary sort key for consistency, e.g., '_id'
+        sort_params = [(sort_by, sort_order), ('_id', pymongo.ASCENDING)]
     else:
         sort_params = None  # No sorting
 
