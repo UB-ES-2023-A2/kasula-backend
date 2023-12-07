@@ -140,3 +140,4 @@ app/config/secret
 config/secret/*
 app/config/.env.local
 .DS_Store
+app/secret/kasula-74fdccef376b.json

@@ -9,6 +9,7 @@ from google.cloud import storage
 import time
 from pathlib import Path
 from typing import List, Optional, Dict
+from pydantic import Field
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -149,8 +150,20 @@ async def get_recipes(
         sort_params = None  # No sorting
 
     # Pagination
-    skip_amount = start if start is not None else 0
-    limit_amount = size if size is not None else 10
+    # Determine the total number of documents matching the query
+    total_recipes = await db["recipes"].count_documents(query)
+
+    # Check if the start index is out of range
+    if start >= total_recipes:
+        raise HTTPException(status_code=400, detail="Start index out of range.")
+
+    # Adjust size if the range exceeds the total documents
+    if start + size > total_recipes:
+        size = total_recipes - start  # Adjust size to return only the remaining documents
+
+    # Pagination with adjusted size
+    skip_amount = start
+    limit_amount = size
 
     recipes = []
     cursor = db["recipes"].find(query)
