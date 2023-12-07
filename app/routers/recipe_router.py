@@ -9,7 +9,6 @@ from google.cloud import storage
 import time
 from pathlib import Path
 from typing import List, Optional, Dict
-from pydantic import Field
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
