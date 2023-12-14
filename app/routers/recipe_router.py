@@ -160,7 +160,7 @@ async def get_magic_recipes(
         elif feedType == 'foryou':
             # Filter public recipes not from followed users and not from the current user
             foryou_conditions = [{"is_public": True}, {"username": {"$nin": following + [current_user["username"]]} }]
-            query = {"$and": [query, *foryou_conditions] if query else {"$and": foryou_conditions} }
+            query = {"$and": [query, *foryou_conditions]} if query else {"$and": foryou_conditions}
 
     # Sorting
     if sort_by:
@@ -183,9 +183,6 @@ async def get_magic_recipes(
     if sort_params:
         cursor = cursor.sort(sort_params)
     recipes = await cursor.skip(start).limit(size).to_list(length=size)
-
-    if not sort_params:
-        random.shuffle(recipes)
 
     return recipes
   
