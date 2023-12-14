@@ -274,7 +274,7 @@ async def update_recipe(
 
         if image_urls:
             existing_images = existing_recipe.get('images', [])
-            recipe_update['images'] = existing_images + image_urls
+            recipe_update['main_image'] = image_urls
 
     # Update logic
     if recipe_update:
