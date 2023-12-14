@@ -1,3 +1,4 @@
+import random
 from .common import *
 from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
@@ -144,7 +145,7 @@ async def get_magic_recipes(
             {"username": regex_search}
         ]
 
-    # Handle feedType logic
+    # Modify existing query based on feedType
     if feedType and current_user:
         if feedType not in ['foryou', 'following']:
             raise HTTPException(status_code=400, detail="Invalid feed type")
@@ -153,16 +154,13 @@ async def get_magic_recipes(
         following = user.get("following", [])
         
         if feedType == 'following':
-            # Only show a maximum of 2 recipes per followed user
-            recipes = []
-            for followed_user in following:
-                followed_recipes = await db["recipes"].find({"username": followed_user}).limit(2).to_list(length=2)
-                recipes.extend(followed_recipes)
-            return recipes
-
+            # Filter recipes from followed users, while keeping other filters
+            query["username"] = {"$in": following}
+        
         elif feedType == 'foryou':
-            # Show only recipes from public users who are not in the following list
-            query = {"$and": [{"is_public": True}, {"username": {"$nin": following}}]}
+            # Filter public recipes not from followed users and not from the current user
+            foryou_conditions = [{"is_public": True}, {"username": {"$nin": following + [current_user["username"]]} }]
+            query = {"$and": [query, *foryou_conditions] if query else {"$and": foryou_conditions} }
 
     # Sorting
     if sort_by:
@@ -185,6 +183,9 @@ async def get_magic_recipes(
     if sort_params:
         cursor = cursor.sort(sort_params)
     recipes = await cursor.skip(start).limit(size).to_list(length=size)
+
+    if not sort_params:
+        random.shuffle(recipes)
 
     return recipes
   
