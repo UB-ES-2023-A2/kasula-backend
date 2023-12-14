@@ -3,9 +3,12 @@ from datetime import datetime
 from typing import Optional, Any
 
 class NotificationModel(BaseModel):
-    type: str = Field(...)
-    text: str = Field(...)
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), alias="_id") # String pq es pugui serialitzar
     date: datetime = Field(default_factory=datetime.utcnow)
+    type: str = Field(...)
+    username: str = Field(...)
+    text: str = Field(...)
+    status: str = Field(default="unread") # unread, read, deleted
     image: Optional[str] = Field(None)
     link: str = Field(...)
 
@@ -16,12 +19,12 @@ class NotificationModel(BaseModel):
         json_schema_extra = {
             "example": {
                 "type": "follow",
-                "text": "User1 has started following you",
-                "image": "https://kasula.mooo.com/images/notifications/follow.png",
+                "text": "t'ha deixat de seguir",
+                "username": "andreu",
+                "image": "https://as2.ftcdn.net/v2/jpg/01/98/33/63/1000_F_198336329_D3JsfuSGm5UBTXR9fwcr2WhKNebr7SiB.jpg",
                 "link": "/UserProfile/ivan"
             }
         }
-    
 
 # Pq cullons serveix això??
 # Per indicar-li quines coses es poden actualitzar?

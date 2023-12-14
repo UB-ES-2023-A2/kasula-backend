@@ -1,5 +1,6 @@
 from app.routers.common import *
 from app.models.notification_model import NotificationModel
+from typing import List
 
 router = APIRouter(tags=["notifications"], prefix="/notification")
 
@@ -18,7 +19,7 @@ async def add_notification(username: str, notification: NotificationModel, db: A
     return JSONResponse(status_code=status.HTTP_201_CREATED, content=jsonable_encoder(notification))
 
 @router.get("/{username}", response_description="Get all notifications from a user")
-async def get_notifications(username: str, db: AsyncIOMotorClient = Depends(get_database)):
+async def get_notifications(username: str, db: AsyncIOMotorClient = Depends(get_database)) -> List[NotificationModel]:
     user = await db["users"].find_one({"username": username})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
