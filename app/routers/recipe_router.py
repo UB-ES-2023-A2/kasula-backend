@@ -1,3 +1,4 @@
+import random
 from .common import *
 from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
@@ -6,6 +7,7 @@ from app.models.user_model import UserModel
 from fastapi import Form, UploadFile, File
 from datetime import datetime
 from google.cloud import storage
+from pymongo import ASCENDING, DESCENDING
 import time
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -20,6 +22,10 @@ router = APIRouter()
 
 def get_database(request: Request):
     return request.app.mongodb
+
+def create_flexible_regex(search_term):
+    pattern = '.*'.join(map(re.escape, search_term))  # This will create a pattern with .* between each character
+    return {'$regex': pattern, '$options': 'i'}
 
 @router.post("/", response_description="Add new recipe")
 async def create_recipe(db: AsyncIOMotorClient = Depends(get_database), recipe: str = Form(...), files: List[UploadFile] = File(None), current_user: UserModel = Depends(get_current_user)):
@@ -78,6 +84,7 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 
     recipes = []
     query = {"$or": [{"is_public": True}]}
+
     if username:
         query["$or"].append({"username": username})
         query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
@@ -89,6 +96,122 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
         return []
 
     return recipes
+
+  
+@router.get("/magic", response_description="Get recipes with filtering, sorting, and pagination")
+async def get_magic_recipes(
+    start: Optional[int] = 0,
+    size: Optional[int] = 10,
+    sort_by: Optional[str] = None,
+    order: Optional[bool] = True,
+    min_cooking_time: Optional[int] = None,
+    max_cooking_time: Optional[int] = None,
+    min_difficulty: Optional[int] = None,
+    max_difficulty: Optional[int] = None,
+    min_energy: Optional[int] = None,
+    max_energy: Optional[int] = None,
+    min_rating: Optional[float] = None,
+    max_rating: Optional[float] = None,
+    search: Optional[str] = None,
+    feedType: Optional[str] = None,  # New parameter
+    db: AsyncIOMotorClient = Depends(get_database),
+    current_user: UserModel = Depends(get_current_user)
+):
+    query = {}
+
+    if min_cooking_time is not None:
+        query["cooking_time"] = {"$gte": min_cooking_time}
+    if max_cooking_time is not None:
+        query.setdefault("cooking_time", {})["$lte"] = max_cooking_time
+    if min_difficulty is not None:
+        query["difficulty"] = {"$gte": min_difficulty}
+    if max_difficulty is not None:
+        query.setdefault("difficulty", {})["$lte"] = max_difficulty
+    if min_energy is not None:
+        query["energy"] = {"$gte": min_energy}
+    if max_energy is not None:
+        query.setdefault("energy", {})["$lte"] = max_energy
+    if min_rating is not None:
+        query["average_rating"] = {"$gte": min_rating}
+    if max_rating is not None:
+        query.setdefault("average_rating", {})["$lte"] = max_rating
+
+    # Flexible search functionality
+    if search:
+        regex_search = create_flexible_regex(search)
+        query["$or"] = [
+            {"name": regex_search},
+            {"ingredients.name": regex_search},
+            {"username": regex_search}
+        ]
+
+    # Modify existing query based on feedType
+    if feedType and current_user:
+        if feedType not in ['foryou', 'following']:
+            raise HTTPException(status_code=400, detail="Invalid feed type")
+
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
+        following = user.get("following", [])
+        
+        if feedType == 'following':
+            # Filter recipes from followed users, while keeping other filters
+            query["username"] = {"$in": following}
+        
+        elif feedType == 'foryou':
+            # Filter public recipes not from followed users and not from the current user
+            foryou_conditions = [{"is_public": True}, {"username": {"$nin": following + [current_user["username"]]} }]
+            query = {"$and": [query, *foryou_conditions]} if query else {"$and": foryou_conditions}
+
+    # Sorting
+    if sort_by:
+        sort_order = ASCENDING if order else DESCENDING
+        # Add a secondary sort key for consistency, e.g., '_id'
+        sort_params = [(sort_by, sort_order), ('_id', ASCENDING)]
+    else:
+        sort_params = None  # No sorting
+
+    # Pagination
+    total_recipes = await db["recipes"].count_documents(query)
+
+    if start >= total_recipes:
+        raise HTTPException(status_code=400, detail="Start index out of range.")
+
+    if start + size > total_recipes:
+        size = total_recipes - start
+
+    cursor = db["recipes"].find(query)
+    if sort_params:
+        cursor = cursor.sort(sort_params)
+    recipes = await cursor.skip(start).limit(size).to_list(length=size)
+
+    return recipes
+  
+  
+@router.get("/similar/{id}", response_description="List similar recipes")
+async def list_similar_recipes(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
+    username = current_user["username"] if current_user else None
+
+    if username:
+        # Retrieve the current user from the database
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
+
+    # Retrieve the current recipe from the database
+    recipe = await db["recipes"].find_one({"_id": id})
+
+    if recipe is None:
+        raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
+
+    similar_recipes = []
+    query = {"$or": [{"is_public": True}]}
+
+    if username:
+        query["$or"].append({"username": username})
+        query["$or"].append({"$and": [{"is_public": False}, {"username": {"$in": user.get("following", [])}}]})
+
+    # Retrieve all similar recipes
+    similar_recipes = await db["recipes"].aggregate([{"$sample": {"size": 6}}]).to_list(length=6)
+
+    return similar_recipes
 
 @router.get("/{id}", response_description="Get a single recipe given its id")
 async def show_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: Optional[Dict[str, str]] = Depends(get_current_user)):
@@ -148,7 +271,7 @@ async def update_recipe(
 
         if image_urls:
             existing_images = existing_recipe.get('images', [])
-            recipe_update['images'] = existing_images + image_urls
+            recipe_update['main_image'] = image_urls
 
     # Update logic
     if recipe_update:
@@ -170,7 +293,8 @@ async def update_recipe(
         return existing_recipe
 
     raise HTTPException(status_code=404, detail=f"Recipe {id} not found")
-
+    
+    
 @router.delete("/{id}", response_description="Delete Recipe")
 async def delete_recipe(id: str, db: AsyncIOMotorClient = Depends(get_database), current_user: UserModel = Depends(get_current_user)):
     # Retrieve the existing recipe from the database.
