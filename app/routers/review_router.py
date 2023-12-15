@@ -3,7 +3,7 @@ from .common import *
 
 from app.models.review_model import ReviewModel, UpdateReviewModel
 from app.models.user_model import UserModel
-from fastapi import Form, UploadFile
+from fastapi import Form, UploadFile, Query
 from datetime import datetime
 from pathlib import Path
 from google.cloud import storage
@@ -171,6 +171,26 @@ async def get_reviews(recipe_id: str, db: AsyncIOMotorClient = Depends(get_datab
         raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
     return recipe.get("reviews", [])
+
+@router.get("/magic/{recipe_id}", response_description="Get sorted reviews for a recipe")
+async def get_sorted_reviews(
+    recipe_id: str, 
+    sort_by: Optional[str] = Query(None, regex="^(rating|likes|creation_date)$"),
+    db: AsyncIOMotorClient = Depends(get_database)
+):
+    # Find the recipe by ID
+    recipe = await db["recipes"].find_one({"_id": recipe_id})
+    if not recipe:
+        raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
+
+    reviews = recipe.get("reviews", [])
+
+    # Sort the reviews based on the specified criteria
+    if sort_by:
+        reverse = True if sort_by in ["rating", "likes", "creation_date"] else False  # Assuming higher values are better for rating and likes
+        reviews.sort(key=lambda review: review.get(sort_by), reverse=reverse)
+
+    return reviews
 
 
 @router.patch("/like/{recipe_id}/{review_id}", response_description="Like a review")

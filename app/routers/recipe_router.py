@@ -1,3 +1,4 @@
+import random
 from .common import *
 from app.models.ingredient_model import RecipeIngredient
 from app.models.instruction_model import InstructionModel
@@ -6,6 +7,7 @@ from app.models.user_model import UserModel
 from fastapi import Form, UploadFile, File
 from datetime import datetime
 from google.cloud import storage
+from pymongo import ASCENDING, DESCENDING
 import time
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -97,7 +99,7 @@ async def list_recipes(db: AsyncIOMotorClient = Depends(get_database), current_u
 
   
 @router.get("/magic", response_description="Get recipes with filtering, sorting, and pagination")
-async def get_recipes(
+async def get_magic_recipes(
     start: Optional[int] = 0,
     size: Optional[int] = 10,
     sort_by: Optional[str] = None,
@@ -111,7 +113,9 @@ async def get_recipes(
     min_rating: Optional[float] = None,
     max_rating: Optional[float] = None,
     search: Optional[str] = None,
-    db: AsyncIOMotorClient = Depends(get_database)
+    feedType: Optional[str] = None,  # New parameter
+    db: AsyncIOMotorClient = Depends(get_database),
+    current_user: UserModel = Depends(get_current_user)
 ):
     query = {}
 
@@ -141,36 +145,44 @@ async def get_recipes(
             {"username": regex_search}
         ]
 
+    # Modify existing query based on feedType
+    if feedType and current_user:
+        if feedType not in ['foryou', 'following']:
+            raise HTTPException(status_code=400, detail="Invalid feed type")
+
+        user = await db["users"].find_one({"_id": current_user["user_id"]})
+        following = user.get("following", [])
+        
+        if feedType == 'following':
+            # Filter recipes from followed users, while keeping other filters
+            query["username"] = {"$in": following}
+        
+        elif feedType == 'foryou':
+            # Filter public recipes not from followed users and not from the current user
+            foryou_conditions = [{"is_public": True}, {"username": {"$nin": following + [current_user["username"]]} }]
+            query = {"$and": [query, *foryou_conditions]} if query else {"$and": foryou_conditions}
+
     # Sorting
     if sort_by:
-        sort_order = pymongo.ASCENDING if order else pymongo.DESCENDING
+        sort_order = ASCENDING if order else DESCENDING
         # Add a secondary sort key for consistency, e.g., '_id'
-        sort_params = [(sort_by, sort_order), ('_id', pymongo.ASCENDING)]
+        sort_params = [(sort_by, sort_order), ('_id', ASCENDING)]
     else:
         sort_params = None  # No sorting
 
     # Pagination
-    # Determine the total number of documents matching the query
     total_recipes = await db["recipes"].count_documents(query)
 
-    # Check if the start index is out of range
     if start >= total_recipes:
         raise HTTPException(status_code=400, detail="Start index out of range.")
 
-    # Adjust size if the range exceeds the total documents
     if start + size > total_recipes:
-        size = total_recipes - start  # Adjust size to return only the remaining documents
+        size = total_recipes - start
 
-    # Pagination with adjusted size
-    skip_amount = start
-    limit_amount = size
-
-    recipes = []
     cursor = db["recipes"].find(query)
     if sort_params:
         cursor = cursor.sort(sort_params)
-    async for recipe in cursor.skip(skip_amount).limit(limit_amount):
-        recipes.append(recipe)
+    recipes = await cursor.skip(start).limit(size).to_list(length=size)
 
     return recipes
   
@@ -259,7 +271,7 @@ async def update_recipe(
 
         if image_urls:
             existing_images = existing_recipe.get('images', [])
-            recipe_update['images'] = existing_images + image_urls
+            recipe_update['main_image'] = image_urls
 
     # Update logic
     if recipe_update:
