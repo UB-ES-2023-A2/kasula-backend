@@ -12,6 +12,9 @@ from typing import List, Optional
 import json
 import uuid
 from app.config import settings
+from app.routers.notifications_router import add_notification
+from app.models.notification_model import NotificationModel
+
 
 project_name = 'kasula'
 bucket_name = 'bucket-kasula_images'
@@ -345,6 +348,25 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
         {"username": target_username},
         {"$addToSet": {"followers": actual_user["username"]}}
     )
+
+    # Create a notification for the target user
+    notification = {
+        "type": "follow",
+        "username": target_user["username"],
+        "text": f"started following you",
+        "message": f"{actual_user['username']} started following you",
+        "link": f"/UserProfile/{actual_user['username']}"
+    }
+    #     type: str = Field(...)
+    # username: str = Field(...)
+    # text: str = Field(...)
+    # status: str = Field(default="unread") # unread, read, deleted
+    # image: Optional[str] = Field(None)
+    # link: str = Field(...)
+
+    notification_model = NotificationModel(**notification)
+    print("Adding notification to user", target_user["username"])
+    await add_notification(target_user["username"], notification_model, db)
 
     return {"message": f"Now following user {username}"}
 

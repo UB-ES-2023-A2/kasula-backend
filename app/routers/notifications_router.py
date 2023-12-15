@@ -38,4 +38,4 @@ async def get_notifications(username: str, db: AsyncIOMotorClient = Depends(get_
     user = await db["users"].find_one({"username": username})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user['notifications']))
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(user['notifications']) if 'notifications' in user else [])
