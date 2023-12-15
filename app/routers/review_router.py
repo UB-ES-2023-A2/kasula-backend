@@ -2,6 +2,9 @@ from typing import List, Optional
 from .common import *
 
 from app.models.review_model import ReviewModel, UpdateReviewModel
+from app.models.notification_model import NotificationModel
+
+from app.routers.notifications_router import add_notification
 from app.models.user_model import UserModel
 from fastapi import Form, UploadFile, Query
 from datetime import datetime
@@ -74,6 +77,19 @@ async def add_review(recipe_id: str, review: str = Form(...), file: Optional[Upl
     )
 
     if update_result.modified_count == 1:
+
+    # Create a notification for the target user when someone follows them
+        notification = {
+            "type": "Review added",
+            "username": user["username"],
+            "text": f'added a review to your recipe {recipe["title"]}',
+            "image": user["image"],
+            "link": f"/RecipeDetail/{recipe_id}",
+        }
+        notification_model = NotificationModel(**notification)
+        print("Adding notification to user", recipe.get("username"))
+        await add_notification(recipe.get("username"), notification_model, db)
+
         return JSONResponse(status_code=status.HTTP_201_CREATED, content=review_dict)
 
     raise HTTPException(status_code=500, detail="Failed to add review")

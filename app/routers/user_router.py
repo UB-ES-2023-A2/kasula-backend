@@ -349,21 +349,13 @@ async def follow_user(username: str, current_user: str = Depends(get_current_use
         {"$addToSet": {"followers": actual_user["username"]}}
     )
 
-    # Create a notification for the target user
+    # Create a notification for the target user when someone follows them
     notification = {
         "type": "follow",
         "username": target_user["username"],
         "text": f"started following you",
-        "message": f"{actual_user['username']} started following you",
         "link": f"/UserProfile/{actual_user['username']}"
     }
-    #     type: str = Field(...)
-    # username: str = Field(...)
-    # text: str = Field(...)
-    # status: str = Field(default="unread") # unread, read, deleted
-    # image: Optional[str] = Field(None)
-    # link: str = Field(...)
-
     notification_model = NotificationModel(**notification)
     print("Adding notification to user", target_user["username"])
     await add_notification(target_user["username"], notification_model, db)
